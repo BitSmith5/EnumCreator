@@ -34,31 +34,47 @@ namespace EnumCreator.Editor
 
             for (int i = 0; i < valuesProp.arraySize; i++)
             {
-                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
-                EditorGUILayout.PropertyField(element, GUIContent.none);
+                EditorGUILayout.PropertyField(element, new GUIContent("Value"));
 
+                // Ensure tooltips list is aligned
+                if (def.MutableTooltips.Count <= i)
+                    def.MutableTooltips.Add("");
+
+                def.MutableTooltips[i] = EditorGUILayout.TextField("Tooltip", def.MutableTooltips[i]);
+
+                EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Remove", GUILayout.Width(60)))
                 {
                     var removedName = element.stringValue;
                     removedValuesProp.arraySize++;
                     removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = removedName;
                     valuesProp.DeleteArrayElementAtIndex(i);
+                    def.MutableTooltips.RemoveAt(i); // Remove corresponding tooltip
                 }
                 EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.EndVertical();
             }
 
+            // Add button also adds empty tooltip
             if (GUILayout.Button("+ Add Value"))
+            {
                 valuesProp.InsertArrayElementAtIndex(valuesProp.arraySize);
+                def.MutableTooltips.Add("");
+            }
 
             GUI.enabled = true;
 
             EditorGUILayout.Space();
 
+            // Apply Changes button with validation
             if (GUILayout.Button("Apply Changes"))
             {
                 serializedObject.ApplyModifiedProperties();
 
+                // Validate duplicates & empty
                 for (int i = 0; i < valuesProp.arraySize; i++)
                 {
                     var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
@@ -82,6 +98,7 @@ namespace EnumCreator.Editor
                 EnumGenerator.Generate(def);
             }
 
+            // Open Generated File button
             if (GUILayout.Button("Open Generated File"))
             {
                 string path = Path.Combine("Assets/GeneratedEnums", def.EnumName + ".cs");

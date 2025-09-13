@@ -18,6 +18,11 @@ MonoBehaviour:
   - Ally
   - Enemy
   - Bot
+  tooltips:
+  - 
+  - 
+  - 
+  - Non playable characters
+  removedValues:
   - NPC
-  removedValues: []
   useFlags: 0
