@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 namespace EnumCreator.Editor
 {
@@ -30,13 +31,16 @@ namespace EnumCreator.Editor
             }
 
             EditorGUILayout.LabelField("Values", EditorStyles.boldLabel);
+
             for (int i = 0; i < valuesProp.arraySize; i++)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.PropertyField(valuesProp.GetArrayElementAtIndex(i), GUIContent.none);
+                var element = valuesProp.GetArrayElementAtIndex(i);
+                EditorGUILayout.PropertyField(element, GUIContent.none);
+
                 if (GUILayout.Button("Remove", GUILayout.Width(60)))
                 {
-                    var removedName = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                    var removedName = element.stringValue;
                     removedValuesProp.arraySize++;
                     removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = removedName;
                     valuesProp.DeleteArrayElementAtIndex(i);
@@ -50,10 +54,46 @@ namespace EnumCreator.Editor
             GUI.enabled = true;
 
             EditorGUILayout.Space();
+
             if (GUILayout.Button("Apply Changes"))
             {
                 serializedObject.ApplyModifiedProperties();
+
+                for (int i = 0; i < valuesProp.arraySize; i++)
+                {
+                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                    if (string.IsNullOrWhiteSpace(nameI))
+                    {
+                        Debug.LogWarning($"Enum '{def.EnumName}': Empty value at index {i}, skipping generation.");
+                        return;
+                    }
+
+                    for (int j = i + 1; j < valuesProp.arraySize; j++)
+                    {
+                        var nameJ = valuesProp.GetArrayElementAtIndex(j).stringValue;
+                        if (nameI == nameJ)
+                        {
+                            Debug.LogWarning($"Enum '{def.EnumName}': Duplicate value '{nameI}', skipping generation.");
+                            return;
+                        }
+                    }
+                }
+
                 EnumGenerator.Generate(def);
+            }
+
+            if (GUILayout.Button("Open Generated File"))
+            {
+                string path = Path.Combine("Assets/GeneratedEnums", def.EnumName + ".cs");
+                if (File.Exists(path))
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                    AssetDatabase.OpenAsset(asset);
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("EnumCreator", "Generated file not found. Apply changes first.", "OK");
+                }
             }
 
             serializedObject.ApplyModifiedProperties();
