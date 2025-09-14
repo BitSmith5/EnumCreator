@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace EnumCreator.Editor
 {
@@ -9,23 +10,55 @@ namespace EnumCreator.Editor
     public class EnumDefinitionEditor : UnityEditor.Editor
     {
         private static readonly Regex ValidIdentifierRegex = new Regex(@"^[_a-zA-Z][_a-zA-Z0-9]*$");
+        private bool hasUnsavedChanges_local = false;
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
             var def = (EnumCreator.EnumDefinition)target;
+            var settings = EnumCreatorSettingsManager.GetOrCreateSettings();
             var enumNameProp = serializedObject.FindProperty("enumName");
             var nsProp = serializedObject.FindProperty("namespace");
             var valuesProp = serializedObject.FindProperty("values");
             var removedValuesProp = serializedObject.FindProperty("removedValues");
             var useFlagsProp = serializedObject.FindProperty("useFlags");
 
-            EditorGUILayout.PropertyField(enumNameProp);
-            EditorGUILayout.PropertyField(nsProp);
-            EditorGUILayout.PropertyField(useFlagsProp, new GUIContent("Use as Flags"));
+            // Always show enum name as read-only (uses filename)
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(new GUIContent("Enum Name", "Uses filename as enum name"), GUILayout.Width(85));
+            EditorGUILayout.LabelField(def.EnumName, EditorStyles.textField);
+            EditorGUILayout.EndHorizontal();
+            
+            // Update enum name to match filename if it doesn't already
+            string fileName = def.name;
+            if (!string.IsNullOrEmpty(fileName) && def.EnumName != fileName)
+            {
+                var enumNameField = typeof(EnumCreator.EnumDefinition).GetField("enumName", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                enumNameField?.SetValue(def, fileName);
+                EditorUtility.SetDirty(def);
+            }
+            
+            // Namespace field with tight spacing
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Namespace", GUILayout.Width(85));
+            nsProp.stringValue = EditorGUILayout.TextField(nsProp.stringValue);
+            EditorGUILayout.EndHorizontal();
+            if (EditorGUI.EndChangeCheck())
+                hasUnsavedChanges_local = true;
+            
+            // Use as Flags field with tight spacing
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Use as Flags", GUILayout.Width(85));
+            useFlagsProp.boolValue = EditorGUILayout.Toggle(useFlagsProp.boolValue);
+            EditorGUILayout.EndHorizontal();
+            if (EditorGUI.EndChangeCheck())
+                hasUnsavedChanges_local = true;
 
-            EditorGUILayout.Space();
+            EditorGUILayout.Space(5);
 
             if (Application.isPlaying)
             {
@@ -65,6 +98,7 @@ namespace EnumCreator.Editor
                         removedValuesProp.arraySize++;
                         removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = valueName;
                         def.MutableRemovedValueNumbers.Add(originalValue);
+                        
                     }
                     else if (!isEnabled && newEnabled)
                     {
@@ -80,9 +114,11 @@ namespace EnumCreator.Editor
                             def.MutableRemovedValues.RemoveAt(removedIndex);
                             def.MutableRemovedValueNumbers.RemoveAt(removedIndex);
                         }
+                        
                     }
                     
                     EditorUtility.SetDirty(def);
+                    hasUnsavedChanges_local = true;
                 }
 
                 // Record undo for value changes
@@ -90,62 +126,116 @@ namespace EnumCreator.Editor
 
                 EditorGUI.BeginChangeCheck();
                 string oldValue = element.stringValue;
-                string newValue = EditorGUILayout.TextField("Value", oldValue);
-
-                // Sanitize input: remove invalid characters
-                newValue = SanitizeIdentifier(newValue);
-
-                // Check for duplicates
-                bool isDuplicate = false;
-                for (int j = 0; j < valuesProp.arraySize; j++)
+                
+                // Check if this specific value should be protected from changes
+                // Only protect if it exists in the generated file AND the setting is enabled
+                bool preventChanges = false;
+                if (settings?.PreventValueNameChanges == true)
                 {
-                    if (j != i && valuesProp.GetArrayElementAtIndex(j).stringValue == newValue)
+                    // Only protect values that exist in the generated enum file
+                    var existingValues = EnumValueProtectionHelper.GetExistingEnumValues(def);
+                    
+                    // Check if this value exists in the generated file
+                    bool existsInGeneratedFile = existingValues.Contains(oldValue);
+                    
+                    // Only protect if it exists in generated file
+                    if (existsInGeneratedFile)
                     {
-                        isDuplicate = true;
-                        break;
+                        // Count how many times this value appears in the current editor
+                        int currentCount = 0;
+                        for (int j = 0; j < valuesProp.arraySize; j++)
+                        {
+                            if (valuesProp.GetArrayElementAtIndex(j).stringValue == oldValue)
+                            {
+                                currentCount++;
+                            }
+                        }
+                        
+                        // Find the index of the first occurrence of this value
+                        int firstOccurrenceIndex = -1;
+                        for (int j = 0; j < valuesProp.arraySize; j++)
+                        {
+                            if (valuesProp.GetArrayElementAtIndex(j).stringValue == oldValue)
+                            {
+                                firstOccurrenceIndex = j;
+                                break;
+                            }
+                        }
+                        
+                        // Only protect the first occurrence (original value)
+                        // Allow editing of duplicates (subsequent occurrences)
+                        preventChanges = (i == firstOccurrenceIndex);
                     }
+                }
+                
+                string newValue;
+                
+                if (preventChanges)
+                {
+                    // Show as label if changes are prevented for this value
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Value", GUILayout.Width(50));
+                    EditorGUILayout.LabelField(oldValue, EditorStyles.textField);
+                    EditorGUILayout.LabelField("🔒", GUILayout.Width(20)); // Lock icon to indicate protection
+                    EditorGUILayout.EndHorizontal();
+                    newValue = oldValue;
+                }
+                else
+                {
+                    // Allow editing
+                    newValue = EditorGUILayout.TextField("Value", oldValue);
+                    // Sanitize input: remove invalid characters
+                    newValue = SanitizeIdentifier(newValue);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (isDuplicate)
-                    {
-                        Debug.LogWarning($"Enum '{def.EnumName}': Duplicate value '{newValue}' not allowed.");
-                    }
-                    else if (string.IsNullOrWhiteSpace(newValue))
-                    {
-                        Debug.LogWarning($"Enum '{def.EnumName}': Value cannot be empty.");
-                    }
-                    else
-                    {
-                        element.stringValue = newValue;
-                        EditorUtility.SetDirty(def);
-                    }
-                }
-
-                // Ensure tooltips list is aligned
-                if (def.MutableTooltips.Count <= i)
-                    def.MutableTooltips.Add("");
-
-                // Tooltip field
-                Undo.RecordObject(def, "Enum Tooltip Change");
-                EditorGUI.BeginChangeCheck();
-                def.MutableTooltips[i] = EditorGUILayout.TextField("Tooltip", def.MutableTooltips[i]);
-                if (EditorGUI.EndChangeCheck())
+                    element.stringValue = newValue;
                     EditorUtility.SetDirty(def);
+                    hasUnsavedChanges_local = true;
+                }
+
+                // Only show tooltip field if IncludeTooltips is enabled
+                if (settings?.IncludeTooltips == true)
+                {
+                    // Ensure tooltips list is aligned
+                    if (def.MutableTooltips.Count <= i)
+                        def.MutableTooltips.Add("");
+
+                    // Tooltip field with tight spacing
+                    Undo.RecordObject(def, "Enum Tooltip Change");
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Tooltip", GUILayout.Width(50));
+                    def.MutableTooltips[i] = EditorGUILayout.TextField(def.MutableTooltips[i]);
+                    EditorGUILayout.EndHorizontal();
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        EditorUtility.SetDirty(def);
+                        hasUnsavedChanges_local = true;
+                    }
+                }
 
                 EditorGUILayout.EndVertical();
             }
 
-            // Add button also adds empty tooltip
+            // Add button - only adds tooltip if IncludeTooltips is enabled
             if (GUILayout.Button("+ Add Value"))
             {
                 Undo.RecordObject(def, "Enum Value Add");
 
                 valuesProp.InsertArrayElementAtIndex(valuesProp.arraySize);
-                def.MutableTooltips.Add("");
+                // Set the new value to empty string instead of copying the previous one
+                valuesProp.GetArrayElementAtIndex(valuesProp.arraySize - 1).stringValue = "";
+                
+                // Only add tooltip if IncludeTooltips is enabled
+                if (settings?.IncludeTooltips == true)
+                {
+                    def.MutableTooltips.Add("");
+                }
 
                 EditorUtility.SetDirty(def);
+                hasUnsavedChanges_local = true;
             }
 
 
@@ -153,48 +243,96 @@ namespace EnumCreator.Editor
 
             EditorGUILayout.Space();
 
-            // Apply Changes button with validation
-            if (GUILayout.Button("Apply Changes"))
+            // Apply Changes button with validation and highlighting
+            Color originalColor = GUI.color;
+            if (hasUnsavedChanges_local)
+            {
+                GUI.color = Color.yellow; // Highlight the button when there are unsaved changes
+            }
+            
+            if (GUILayout.Button(hasUnsavedChanges_local ? "Apply Changes ⚠" : "Apply Changes"))
             {
                 serializedObject.ApplyModifiedProperties();
 
+                bool hasErrors = false;
+                bool hasWarnings = false;
+                string errorMessage = "";
+                string warningMessage = "";
+
+                // Check for empty values
                 for (int i = 0; i < valuesProp.arraySize; i++)
                 {
                     var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
 
-                    // Empty check
                     if (string.IsNullOrWhiteSpace(nameI))
                     {
-                        Debug.LogWarning($"Enum '{def.EnumName}': Empty value at index {i}, skipping generation.");
-                        return;
+                        hasErrors = true;
+                        errorMessage += $"Empty value at index {i + 1}.\n";
                     }
+                }
 
-                    // Invalid identifier check
-                    if (!ValidIdentifierRegex.IsMatch(nameI))
+                // Check for invalid identifiers
+                for (int i = 0; i < valuesProp.arraySize; i++)
+                {
+                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                    
+                    if (!string.IsNullOrWhiteSpace(nameI) && !ValidIdentifierRegex.IsMatch(nameI))
                     {
-                        Debug.LogWarning($"Enum '{def.EnumName}': Value '{nameI}' is not a valid C# identifier, skipping generation.");
-                        return;
+                        hasErrors = true;
+                        errorMessage += $"Value '{nameI}' is not a valid C# identifier.\n";
                     }
+                }
 
-                    // Duplicate check
-                    for (int j = i + 1; j < valuesProp.arraySize; j++)
+                // Check for duplicates (warning, not error)
+                var duplicates = new HashSet<string>();
+                for (int i = 0; i < valuesProp.arraySize; i++)
+                {
+                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                    
+                    if (!string.IsNullOrWhiteSpace(nameI))
                     {
-                        var nameJ = valuesProp.GetArrayElementAtIndex(j).stringValue;
-                        if (nameI == nameJ)
+                        if (duplicates.Contains(nameI))
                         {
-                            Debug.LogWarning($"Enum '{def.EnumName}': Duplicate value '{nameI}', skipping generation.");
-                            return;
+                            hasWarnings = true;
+                            warningMessage += $"Duplicate value: '{nameI}'.\n";
+                        }
+                        else
+                        {
+                            duplicates.Add(nameI);
                         }
                     }
                 }
 
+                // Show error dialog if there are critical errors
+                if (hasErrors)
+                {
+                    EditorUtility.DisplayDialog("Enum Creator - Errors", 
+                        $"Cannot generate enum '{def.EnumName}' due to errors:\n\n{errorMessage.TrimEnd()}", "OK");
+                    return;
+                }
+
+                // Show warning dialog if there are duplicates and prevent generation
+                if (hasWarnings)
+                {
+                    EditorUtility.DisplayDialog("Enum Creator - Duplicates Found", 
+                        $"Cannot apply changes due to duplicate values in '{def.EnumName}':\n\n{warningMessage.TrimEnd()}\n\nPlease fix the duplicates before applying changes.", 
+                        "OK");
+                    return;
+                }
+
+                // Generate the enum only if no errors or warnings
                 EnumGenerator.Generate(def);
+                hasUnsavedChanges_local = false; // Reset the flag after successful generation
             }
+            
+            // Reset GUI color after button
+            GUI.color = originalColor;
 
             // Open Generated File button
             if (GUILayout.Button("Open Generated File"))
             {
-                string path = Path.Combine("Assets/GeneratedEnums", def.EnumName + ".cs");
+                string generatedPath = settings?.GeneratedEnumsPath ?? "Assets/GeneratedEnums";
+                string path = Path.Combine(generatedPath, def.EnumName + ".cs");
                 if (File.Exists(path))
                 {
                     var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
@@ -208,6 +346,7 @@ namespace EnumCreator.Editor
 
             serializedObject.ApplyModifiedProperties();
         }
+
 
         private string SanitizeIdentifier(string input)
         {

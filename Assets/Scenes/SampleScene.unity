@@ -470,7 +470,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0307dbbb37507743a17d955c273998e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentWeapon: 0
+  currentWeapon: 1
   currentPlayer: 0
   myPets: 11
 --- !u!1660057539 &9223372036854775807

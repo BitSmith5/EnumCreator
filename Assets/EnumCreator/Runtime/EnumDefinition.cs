@@ -26,5 +26,6 @@ namespace EnumCreator
         public List<string> MutableRemovedValues => removedValues;
         public List<int> MutableRemovedValueNumbers => removedValueNumbers;
         public List<string> MutableTooltips => tooltips;  // Expose tooltips for editor modification
+
     }
 }

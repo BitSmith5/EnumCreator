@@ -14,6 +14,12 @@ namespace EnumCreator.Editor
     {
         private static FileSystemWatcher fileWatcher;
         private static readonly string GeneratedPath = "Assets/GeneratedEnums";
+        
+        private static string GetGeneratedPath()
+        {
+            var settings = EnumCreatorSettingsManager.GetOrCreateSettings();
+            return settings?.GeneratedEnumsPath ?? GeneratedPath;
+        }
         private static System.Collections.Generic.HashSet<string> modifiedFiles = new System.Collections.Generic.HashSet<string>();
         private static System.Collections.Generic.Dictionary<string, System.DateTime> lastProcessedTimes = new System.Collections.Generic.Dictionary<string, System.DateTime>();
 
@@ -34,10 +40,11 @@ namespace EnumCreator.Editor
                 fileWatcher.Dispose();
             }
 
-            if (!Directory.Exists(GeneratedPath))
+            string generatedPath = GetGeneratedPath();
+            if (!Directory.Exists(generatedPath))
                 return;
 
-            fileWatcher = new FileSystemWatcher(GeneratedPath, "*.cs")
+            fileWatcher = new FileSystemWatcher(generatedPath, "*.cs")
             {
                 EnableRaisingEvents = true,
                 IncludeSubdirectories = false
@@ -111,10 +118,11 @@ namespace EnumCreator.Editor
 
         private static void CheckAllEnumFiles()
         {
-            if (!Directory.Exists(GeneratedPath))
+            string generatedPath = GetGeneratedPath();
+            if (!Directory.Exists(generatedPath))
                 return;
 
-            string[] enumFiles = Directory.GetFiles(GeneratedPath, "*.cs", SearchOption.TopDirectoryOnly);
+            string[] enumFiles = Directory.GetFiles(generatedPath, "*.cs", SearchOption.TopDirectoryOnly);
             
             foreach (string filePath in enumFiles)
             {
@@ -395,20 +403,20 @@ namespace EnumCreator.Editor
             public bool IsObsolete { get; set; }
         }
 
-        [MenuItem("Tools/Enum Creator/Setup File Watcher")]
+        [MenuItem("Tools/Enum Creator/Utilities/Setup File Watcher")]
         public static void SetupWatcher()
         {
             SetupFileWatcher();
             SetupCompilationCallbacks();
         }
 
-        [MenuItem("Tools/Enum Creator/Force Sync All Enum Files")]
+        [MenuItem("Tools/Enum Creator/Utilities/Force Sync All Enum Files")]
         public static void ForceSyncAll()
         {
             CheckAllEnumFiles();
         }
 
-        [MenuItem("Tools/Enum Creator/Trigger Compilation Sync")]
+        [MenuItem("Tools/Enum Creator/Utilities/Trigger Compilation Sync")]
         public static void TriggerCompilationSync()
         {
             OnCompilationFinished(null);
