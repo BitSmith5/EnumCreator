@@ -9,12 +9,6 @@ namespace EnumCreator.Editor
     public class EnumDefinitionEditor : UnityEditor.Editor
     {
         private static readonly Regex ValidIdentifierRegex = new Regex(@"^[_a-zA-Z][_a-zA-Z0-9]*$");
-        private EnumCreator.EnumCreatorSettings settings;
-
-        private void OnEnable()
-        {
-            settings = AssetDatabase.LoadAssetAtPath<EnumCreator.EnumCreatorSettings>("Assets/Settings/EnumCreatorSettings.asset");
-        }
 
         public override void OnInspectorGUI()
         {
@@ -31,12 +25,6 @@ namespace EnumCreator.Editor
             EditorGUILayout.PropertyField(nsProp);
             EditorGUILayout.PropertyField(useFlagsProp, new GUIContent("Use as Flags"));
 
-            if (string.IsNullOrWhiteSpace(nsProp.stringValue))
-            {
-                string defaultNS = settings != null ? settings.defaultNamespace : "DefaultNamespace";
-                EditorGUILayout.HelpBox($"Using project default namespace: {defaultNS}", MessageType.Info);
-            }
-
             EditorGUILayout.Space();
 
             if (Application.isPlaying)
@@ -52,12 +40,17 @@ namespace EnumCreator.Editor
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
 
+                // Record undo
                 Undo.RecordObject(def, "Enum Value Change");
+
                 EditorGUI.BeginChangeCheck();
                 string oldValue = element.stringValue;
                 string newValue = EditorGUILayout.TextField("Value", oldValue);
+
+                // Sanitize input: remove invalid characters
                 newValue = SanitizeIdentifier(newValue);
 
+                // Check for duplicates
                 bool isDuplicate = false;
                 for (int j = 0; j < valuesProp.arraySize; j++)
                 {
@@ -71,9 +64,13 @@ namespace EnumCreator.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     if (isDuplicate)
+                    {
                         Debug.LogWarning($"Enum '{def.EnumName}': Duplicate value '{newValue}' not allowed.");
+                    }
                     else if (string.IsNullOrWhiteSpace(newValue))
+                    {
                         Debug.LogWarning($"Enum '{def.EnumName}': Value cannot be empty.");
+                    }
                     else
                     {
                         element.stringValue = newValue;
@@ -81,9 +78,11 @@ namespace EnumCreator.Editor
                     }
                 }
 
+                // Ensure tooltips list is aligned
                 if (def.MutableTooltips.Count <= i)
                     def.MutableTooltips.Add("");
 
+                // Tooltip field
                 Undo.RecordObject(def, "Enum Tooltip Change");
                 EditorGUI.BeginChangeCheck();
                 def.MutableTooltips[i] = EditorGUILayout.TextField("Tooltip", def.MutableTooltips[i]);
@@ -108,6 +107,7 @@ namespace EnumCreator.Editor
                 EditorGUILayout.EndVertical();
             }
 
+            // Add button also adds empty tooltip
             if (GUILayout.Button("+ Add Value"))
             {
                 Undo.RecordObject(def, "Enum Value Add");
@@ -122,31 +122,30 @@ namespace EnumCreator.Editor
 
             EditorGUILayout.Space();
 
+            // Apply Changes button with validation
             if (GUILayout.Button("Apply Changes"))
             {
                 serializedObject.ApplyModifiedProperties();
-
-                // Determine the final namespace to pass to the generator
-                string finalNamespace = string.IsNullOrWhiteSpace(def.Namespace)
-                    ? (settings != null ? settings.defaultNamespace : "DefaultNamespace")
-                    : def.Namespace;
 
                 for (int i = 0; i < valuesProp.arraySize; i++)
                 {
                     var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
 
+                    // Empty check
                     if (string.IsNullOrWhiteSpace(nameI))
                     {
                         Debug.LogWarning($"Enum '{def.EnumName}': Empty value at index {i}, skipping generation.");
                         return;
                     }
 
+                    // Invalid identifier check
                     if (!ValidIdentifierRegex.IsMatch(nameI))
                     {
                         Debug.LogWarning($"Enum '{def.EnumName}': Value '{nameI}' is not a valid C# identifier, skipping generation.");
                         return;
                     }
 
+                    // Duplicate check
                     for (int j = i + 1; j < valuesProp.arraySize; j++)
                     {
                         var nameJ = valuesProp.GetArrayElementAtIndex(j).stringValue;
@@ -158,9 +157,10 @@ namespace EnumCreator.Editor
                     }
                 }
 
-                EnumGenerator.Generate(def, finalNamespace);
+                EnumGenerator.Generate(def);
             }
 
+            // Open Generated File button
             if (GUILayout.Button("Open Generated File"))
             {
                 string path = Path.Combine("Assets/GeneratedEnums", def.EnumName + ".cs");
@@ -183,8 +183,10 @@ namespace EnumCreator.Editor
             if (string.IsNullOrEmpty(input))
                 return "";
 
+            // Replace spaces and invalid chars with _
             string sanitized = Regex.Replace(input, @"[^a-zA-Z0-9_]", "_");
 
+            // If starts with a number, prepend _
             if (char.IsDigit(sanitized[0]))
                 sanitized = "_" + sanitized;
 

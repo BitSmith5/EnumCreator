@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Player
   m_EditorClassIdentifier: 
   enumName: Player
-  namespace: 
+  namespace: Game.Enums
   values:
   - Ally
   - Enemy
@@ -26,8 +26,6 @@ MonoBehaviour:
   - 
   - 
   - 
-  - 
   removedValues:
   - NPC
-  - Bo
   useFlags: 0
