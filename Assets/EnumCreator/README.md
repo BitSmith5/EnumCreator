@@ -82,13 +82,13 @@ Add tooltips to enum values for:
 
 ## 📖 Documentation
 
-For detailed documentation, examples, and advanced usage, visit our [GitHub repository](https://github.com/yourusername/enumcreator).
+For detailed documentation, examples, and advanced usage, visit our [GitHub repository](https://github.com/BitSmith5/EnumCreator).
 
 ## 🐛 Support
 
-- **Bug Reports**: [GitHub Issues](https://github.com/yourusername/enumcreator/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/enumcreator/discussions)
-- **Documentation**: [Wiki](https://github.com/yourusername/enumcreator/wiki)
+- **Bug Reports**: [GitHub Issues](https://github.com/BitSmith5/EnumCreator/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/BitSmith5/EnumCreator/discussions)
+- **Documentation**: [Wiki](https://github.com/BitSmith5/EnumCreator/wiki)
 
 ## 📄 License
 

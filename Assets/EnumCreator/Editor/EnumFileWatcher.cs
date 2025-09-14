@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -160,9 +161,15 @@ namespace EnumCreator.Editor
 
                 // Find corresponding enum definition
                 var enumDef = FindEnumDefinition(fileName);
+                
+                // If no enum definition exists, try to create one from the standalone enum file
                 if (enumDef == null)
                 {
-                    return;
+                    enumDef = CreateEnumDefinitionFromFile(filePath, fileName);
+                    if (enumDef == null)
+                    {
+                        return; // Could not create or parse the enum file
+                    }
                 }
 
                 // Parse the enum file and update the definition
@@ -175,9 +182,9 @@ namespace EnumCreator.Editor
                 // Track when we last processed this file
                 lastProcessedTimes[filePath] = fileInfo.LastWriteTime;
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
-                // Silently handle any parsing errors
+                Debug.LogWarning($"EnumCreator: Failed to process enum file '{filePath}': {ex.Message}");
             }
         }
 
@@ -215,6 +222,66 @@ namespace EnumCreator.Editor
             return null;
         }
 
+        private static EnumCreator.EnumDefinition CreateEnumDefinitionFromFile(string filePath, string fileName)
+        {
+            try
+            {
+                // First, try to parse the enum file to validate it's a proper enum
+                string content = File.ReadAllText(filePath);
+                var parsedEnum = ParseEnumContent(content);
+                
+                if (parsedEnum == null || parsedEnum.Values.Count == 0)
+                {
+                    Debug.LogWarning($"EnumCreator: Could not parse enum from file '{filePath}' - invalid enum format or no values found.");
+                    return null;
+                }
+
+                // Get settings for default values
+                var settings = EnumCreatorSettingsManager.GetOrCreateSettings();
+                
+                // Create a new enum definition asset
+                var enumDef = ScriptableObject.CreateInstance<EnumCreator.EnumDefinition>();
+                
+                // Set the enum name from the file name
+                var enumNameField = typeof(EnumCreator.EnumDefinition).GetField("enumName", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                enumNameField?.SetValue(enumDef, fileName);
+
+                // Set the namespace from the parsed content or use default
+                var namespaceField = typeof(EnumCreator.EnumDefinition).GetField("@namespace", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                namespaceField?.SetValue(enumDef, !string.IsNullOrEmpty(parsedEnum.Namespace) ? parsedEnum.Namespace : settings?.DefaultNamespace ?? "Game.Enums");
+
+                // Set the flags attribute
+                var useFlagsField = typeof(EnumCreator.EnumDefinition).GetField("useFlags", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                useFlagsField?.SetValue(enumDef, parsedEnum.UseFlags);
+
+                // Create the asset in the project
+                string enumDefPath = $"Assets/EnumCreator/Definitions/{fileName}.asset";
+                
+                // Ensure the directory exists
+                string directory = Path.GetDirectoryName(enumDefPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                AssetDatabase.CreateAsset(enumDef, enumDefPath);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+
+                Debug.Log($"EnumCreator: Created new enum definition '{fileName}' from standalone enum file. Asset saved to: {enumDefPath}");
+                
+                return enumDef;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"EnumCreator: Failed to create enum definition from file '{filePath}': {ex.Message}");
+                return null;
+            }
+        }
+
         private static void ParseAndUpdateEnumDefinition(string filePath, EnumCreator.EnumDefinition enumDef)
         {
             string content = File.ReadAllText(filePath);
@@ -247,21 +314,35 @@ namespace EnumCreator.Editor
                 // Check for [System.Flags] attribute
                 parsedEnum.UseFlags = content.Contains("[System.Flags]");
 
-                // Extract enum values
-                var valuePattern = @"(\s*\[System\.Obsolete\([^)]+\)\])?\s*(\w+)\s*=\s*(\d+),?";
+                // Extract enum values with improved pattern to handle tooltips
+                // Pattern matches: [Tooltip("...")] [Obsolete("...")] ValueName = 123,
+                var valuePattern = @"(\s*\[UnityEngine\.Tooltip\([^)]+\)\])?(\s*\[System\.Obsolete\([^)]+\)\])?\s*(\w+)\s*=\s*(\d+),?";
                 var matches = Regex.Matches(content, valuePattern, RegexOptions.Multiline);
 
                 foreach (Match match in matches)
                 {
-                    bool isObsolete = match.Groups[1].Success;
-                    string valueName = match.Groups[2].Value;
-                    int numericValue = int.Parse(match.Groups[3].Value);
+                    bool hasTooltip = match.Groups[1].Success;
+                    bool isObsolete = match.Groups[2].Success;
+                    string valueName = match.Groups[3].Value;
+                    int numericValue = int.Parse(match.Groups[4].Value);
+
+                    // Extract tooltip text if present
+                    string tooltip = "";
+                    if (hasTooltip)
+                    {
+                        var tooltipMatch = Regex.Match(match.Groups[1].Value, @"\[UnityEngine\.Tooltip\([""']([^""']+)[""']\)\]");
+                        if (tooltipMatch.Success)
+                        {
+                            tooltip = tooltipMatch.Groups[1].Value;
+                        }
+                    }
 
                     parsedEnum.Values.Add(new ParsedEnumValue
                     {
                         Name = valueName,
                         NumericValue = numericValue,
-                        IsObsolete = isObsolete
+                        IsObsolete = isObsolete,
+                        Tooltip = tooltip
                     });
                 }
 
@@ -320,23 +401,23 @@ namespace EnumCreator.Editor
                 // Always add to active values (they should stay visible in inspector)
                 if (!existingActiveValues.Contains(parsedValue.Name))
                 {
-                    // New value - add it
+                    // New value - add it with tooltip from file if available
                     newActiveValues.Add(parsedValue.Name);
-                    newTooltips.Add(""); // Default empty tooltip
+                    newTooltips.Add(parsedValue.Tooltip ?? ""); // Use tooltip from file or empty
                 }
                 else
                 {
-                    // Already exists - keep it and preserve tooltip
+                    // Already exists - keep it and preserve existing tooltip unless file has a new one
                     newActiveValues.Add(parsedValue.Name);
                     int tooltipIndex = enumDef.MutableValues.IndexOf(parsedValue.Name);
+                    string existingTooltip = "";
                     if (tooltipIndex >= 0 && tooltipIndex < enumDef.MutableTooltips.Count)
                     {
-                        newTooltips.Add(enumDef.MutableTooltips[tooltipIndex]);
+                        existingTooltip = enumDef.MutableTooltips[tooltipIndex];
                     }
-                    else
-                    {
-                        newTooltips.Add(""); // Default empty tooltip
-                    }
+                    
+                    // Use tooltip from file if it's not empty, otherwise preserve existing
+                    newTooltips.Add(!string.IsNullOrEmpty(parsedValue.Tooltip) ? parsedValue.Tooltip : existingTooltip);
                 }
                 
                 // Handle disabled state
@@ -401,6 +482,7 @@ namespace EnumCreator.Editor
             public string Name { get; set; } = "";
             public int NumericValue { get; set; }
             public bool IsObsolete { get; set; }
+            public string Tooltip { get; set; } = "";
         }
 
         [MenuItem("Tools/Enum Creator/Utilities/Setup File Watcher")]
@@ -420,6 +502,129 @@ namespace EnumCreator.Editor
         public static void TriggerCompilationSync()
         {
             OnCompilationFinished(null);
+        }
+
+        [MenuItem("Tools/Enum Creator/Create New Enum File")]
+        public static void CreateNewEnumFile()
+        {
+            // Show input dialog to get enum name from user
+            EnumNameInputDialog.ShowDialog((enumName) =>
+            {
+                if (!string.IsNullOrEmpty(enumName))
+                {
+                    CreateEnumFileWithName(enumName);
+                }
+            });
+        }
+
+        private static void CreateEnumFileWithName(string enumName)
+        {
+            // Validate enum name
+            if (!IsValidEnumName(enumName))
+            {
+                EditorUtility.DisplayDialog("Invalid Enum Name", 
+                    "Enum names must start with a letter and contain only letters, digits, and underscores.", "OK");
+                return;
+            }
+
+            string generatedPath = GetGeneratedPath();
+            
+            if (!Directory.Exists(generatedPath))
+            {
+                Directory.CreateDirectory(generatedPath);
+            }
+
+            // Check if file already exists
+            string filePath = Path.Combine(generatedPath, $"{enumName}.cs");
+            if (File.Exists(filePath))
+            {
+                bool overwrite = EditorUtility.DisplayDialog("File Exists", 
+                    $"A file named '{enumName}.cs' already exists. Do you want to overwrite it?", 
+                    "Overwrite", "Cancel");
+                
+                if (!overwrite)
+                {
+                    return;
+                }
+            }
+
+            // Get settings for default values
+            var settings = EnumCreatorSettingsManager.GetOrCreateSettings();
+            
+            // Create a basic enum file template
+            using (var writer = new StreamWriter(filePath))
+            {
+                writer.WriteLine($"namespace {settings?.DefaultNamespace ?? "Game.Enums"}");
+                writer.WriteLine("{");
+                
+                // Add flags attribute if default setting is enabled
+                if (settings?.DefaultUseFlags == true)
+                {
+                    writer.WriteLine("    [System.Flags]");
+                }
+                
+                writer.WriteLine($"    public enum {enumName}");
+                writer.WriteLine("    {");
+                
+                // Determine numbering scheme based on settings
+                writer.WriteLine("        None = 0,");
+                
+                if (settings?.DefaultUseFlags == true)
+                {
+                    // Flags always use powers of 2
+                    writer.WriteLine("        Value1 = 1,");
+                    writer.WriteLine("        Value2 = 2,");
+                    writer.WriteLine("        Value3 = 4,");
+                }
+                else if (settings?.UsePowersOfTwoForUnflagged == true)
+                {
+                    // Unflagged enums using powers of 2
+                    writer.WriteLine("        Value1 = 1,");
+                    writer.WriteLine("        Value2 = 2,");
+                    writer.WriteLine("        Value3 = 4,");
+                }
+                else
+                {
+                    // Sequential numbering
+                    writer.WriteLine("        Value1 = 1,");
+                    writer.WriteLine("        Value2 = 2,");
+                    writer.WriteLine("        Value3 = 3,");
+                }
+                
+                writer.WriteLine("    }");
+                writer.WriteLine("}");
+            }
+
+            AssetDatabase.Refresh();
+            
+            // Select the newly created file in the Project window
+            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filePath);
+            Selection.activeObject = asset;
+            EditorGUIUtility.PingObject(asset);
+            
+            Debug.Log($"EnumCreator: Created new enum file '{enumName}' at '{filePath}'. Edit this file and save to automatically create an enum definition.");
+        }
+
+        private static bool IsValidEnumName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+                
+            // Check if name starts with a letter or underscore
+            if (!char.IsLetter(name[0]) && name[0] != '_')
+                return false;
+                
+            // Check if all characters are valid (letters, digits, underscores)
+            for (int i = 1; i < name.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(name[i]) && name[i] != '_')
+                    return false;
+            }
+            
+            // Check if it's not a C# keyword
+            string[] keywords = { "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while" };
+            
+            return !keywords.Contains(name.ToLower());
         }
     }
 }

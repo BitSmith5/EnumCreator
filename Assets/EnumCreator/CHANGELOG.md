@@ -44,3 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 **Note**: This changelog follows the format recommended by Keep a Changelog and Semantic Versioning.
+
+---
+
+*EnumCreator Pro by Nicholas R. Gallo*  
+*https://github.com/BitSmith5/EnumCreator*
