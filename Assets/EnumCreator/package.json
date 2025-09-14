@@ -30,12 +30,5 @@
   },
   "homepage": "https://gallonicholas.myportfolio.com/",
   "changelogUrl": "https://github.com/BitSmith5/EnumCreator/blob/main/Assets/EnumCreator/CHANGELOG.md",
-  "dependencies": {},
-  "samples": [
-    {
-      "displayName": "Basic Examples",
-      "description": "Basic enum creation examples",
-      "path": "Samples~/BasicExamples"
-    }
-  ]
+  "dependencies": {}
 }
