@@ -8,7 +8,9 @@ namespace Game.Enums
         Ally = 0,
         Enemy = 1,
         Bot = 2,
+        _1lkj = 3,
+        Bo = 4,
         [System.Obsolete("NPC removed by designer")]
-        NPC = 4,
+        NPC = 6,
     }
 }

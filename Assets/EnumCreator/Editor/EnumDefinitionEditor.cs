@@ -1,12 +1,15 @@
 using UnityEditor;
 using UnityEngine;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace EnumCreator.Editor
 {
     [CustomEditor(typeof(EnumCreator.EnumDefinition))]
     public class EnumDefinitionEditor : UnityEditor.Editor
     {
+        private static readonly Regex ValidIdentifierRegex = new Regex(@"^[_a-zA-Z][_a-zA-Z0-9]*$");
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -37,18 +40,49 @@ namespace EnumCreator.Editor
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
 
-                // Record undo for value edits
+                // Record undo
                 Undo.RecordObject(def, "Enum Value Change");
+
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(element, new GUIContent("Value"));
+                string oldValue = element.stringValue;
+                string newValue = EditorGUILayout.TextField("Value", oldValue);
+
+                // Sanitize input: remove invalid characters
+                newValue = SanitizeIdentifier(newValue);
+
+                // Check for duplicates
+                bool isDuplicate = false;
+                for (int j = 0; j < valuesProp.arraySize; j++)
+                {
+                    if (j != i && valuesProp.GetArrayElementAtIndex(j).stringValue == newValue)
+                    {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+
                 if (EditorGUI.EndChangeCheck())
-                    EditorUtility.SetDirty(def);
+                {
+                    if (isDuplicate)
+                    {
+                        Debug.LogWarning($"Enum '{def.EnumName}': Duplicate value '{newValue}' not allowed.");
+                    }
+                    else if (string.IsNullOrWhiteSpace(newValue))
+                    {
+                        Debug.LogWarning($"Enum '{def.EnumName}': Value cannot be empty.");
+                    }
+                    else
+                    {
+                        element.stringValue = newValue;
+                        EditorUtility.SetDirty(def);
+                    }
+                }
 
                 // Ensure tooltips list is aligned
                 if (def.MutableTooltips.Count <= i)
                     def.MutableTooltips.Add("");
 
-                // Record undo for tooltip edits
+                // Tooltip field
                 Undo.RecordObject(def, "Enum Tooltip Change");
                 EditorGUI.BeginChangeCheck();
                 def.MutableTooltips[i] = EditorGUILayout.TextField("Tooltip", def.MutableTooltips[i]);
@@ -93,16 +127,25 @@ namespace EnumCreator.Editor
             {
                 serializedObject.ApplyModifiedProperties();
 
-                // Validate duplicates & empty
                 for (int i = 0; i < valuesProp.arraySize; i++)
                 {
                     var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+
+                    // Empty check
                     if (string.IsNullOrWhiteSpace(nameI))
                     {
                         Debug.LogWarning($"Enum '{def.EnumName}': Empty value at index {i}, skipping generation.");
                         return;
                     }
 
+                    // Invalid identifier check
+                    if (!ValidIdentifierRegex.IsMatch(nameI))
+                    {
+                        Debug.LogWarning($"Enum '{def.EnumName}': Value '{nameI}' is not a valid C# identifier, skipping generation.");
+                        return;
+                    }
+
+                    // Duplicate check
                     for (int j = i + 1; j < valuesProp.arraySize; j++)
                     {
                         var nameJ = valuesProp.GetArrayElementAtIndex(j).stringValue;
@@ -133,6 +176,21 @@ namespace EnumCreator.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private string SanitizeIdentifier(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+
+            // Replace spaces and invalid chars with _
+            string sanitized = Regex.Replace(input, @"[^a-zA-Z0-9_]", "_");
+
+            // If starts with a number, prepend _
+            if (char.IsDigit(sanitized[0]))
+                sanitized = "_" + sanitized;
+
+            return sanitized;
         }
     }
 }

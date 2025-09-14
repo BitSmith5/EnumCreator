@@ -18,11 +18,14 @@ MonoBehaviour:
   - Ally
   - Enemy
   - Bot
+  - _1lkj
+  - Bo
   tooltips:
   - 
   - 
   - 
-  - Non playable characters
+  - 
+  - 
   removedValues:
   - NPC
   useFlags: 0
