@@ -182,8 +182,11 @@ namespace EnumCreator.Editor
                 }
                 else
                 {
-                    // Allow editing
-                    newValue = EditorGUILayout.TextField("Value", oldValue);
+                    // Allow editing with consistent width
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Value", GUILayout.Width(50));
+                    newValue = EditorGUILayout.TextField(oldValue);
+                    EditorGUILayout.EndHorizontal();
                     // Sanitize input: remove invalid characters
                     newValue = SanitizeIdentifier(newValue);
                 }
