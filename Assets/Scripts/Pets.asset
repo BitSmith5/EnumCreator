@@ -15,9 +15,13 @@ MonoBehaviour:
   enumName: Pets
   namespace: Game.Enums
   values:
-  - Cat
   - Dog
+  - Cat
   - Fish
-  removedValues:
-  - Turtle
+  tooltips:
+  - 
+  - 
+  - 
+  removedValues: []
+  removedValueNumbers: 
   useFlags: 1

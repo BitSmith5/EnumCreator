@@ -40,7 +40,52 @@ namespace EnumCreator.Editor
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
 
-                // Record undo
+                // Enable/Disable checkbox
+                Undo.RecordObject(def, "Enum Value Toggle");
+                EditorGUI.BeginChangeCheck();
+                
+                // Check if this value is currently disabled (in removed values)
+                bool isEnabled = !def.MutableRemovedValues.Contains(element.stringValue);
+                
+                EditorGUILayout.BeginHorizontal();
+                bool newEnabled = EditorGUILayout.Toggle(isEnabled, GUILayout.Width(20));
+                EditorGUILayout.LabelField(isEnabled ? "✓ Enabled" : "✗ Disabled", GUILayout.Width(80));
+                EditorGUILayout.EndHorizontal();
+                
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (isEnabled && !newEnabled)
+                    {
+                        // Disable: move to removed values
+                        var valueName = element.stringValue;
+                        int originalValue = def.UseFlags ? (1 << i) : i;
+                        
+                        Debug.Log($"Disabling '{valueName}' at index {i}, preserving value: {originalValue}");
+                        
+                        removedValuesProp.arraySize++;
+                        removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = valueName;
+                        def.MutableRemovedValueNumbers.Add(originalValue);
+                    }
+                    else if (!isEnabled && newEnabled)
+                    {
+                        // Enable: remove from removed values
+                        var valueName = element.stringValue;
+                        
+                        Debug.Log($"Enabling '{valueName}' - removing from obsolete list");
+                        
+                        // Remove from removed values using mutable list
+                        int removedIndex = def.MutableRemovedValues.IndexOf(valueName);
+                        if (removedIndex >= 0)
+                        {
+                            def.MutableRemovedValues.RemoveAt(removedIndex);
+                            def.MutableRemovedValueNumbers.RemoveAt(removedIndex);
+                        }
+                    }
+                    
+                    EditorUtility.SetDirty(def);
+                }
+
+                // Record undo for value changes
                 Undo.RecordObject(def, "Enum Value Change");
 
                 EditorGUI.BeginChangeCheck();
@@ -89,21 +134,6 @@ namespace EnumCreator.Editor
                 if (EditorGUI.EndChangeCheck())
                     EditorUtility.SetDirty(def);
 
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Remove", GUILayout.Width(60)))
-                {
-                    Undo.RecordObject(def, "Enum Value Remove");
-
-                    var removedName = element.stringValue;
-                    removedValuesProp.arraySize++;
-                    removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = removedName;
-                    valuesProp.DeleteArrayElementAtIndex(i);
-                    def.MutableTooltips.RemoveAt(i);
-
-                    EditorUtility.SetDirty(def);
-                }
-                EditorGUILayout.EndHorizontal();
-
                 EditorGUILayout.EndVertical();
             }
 
@@ -117,6 +147,7 @@ namespace EnumCreator.Editor
 
                 EditorUtility.SetDirty(def);
             }
+
 
             GUI.enabled = true;
 
@@ -192,5 +223,6 @@ namespace EnumCreator.Editor
 
             return sanitized;
         }
+
     }
 }
