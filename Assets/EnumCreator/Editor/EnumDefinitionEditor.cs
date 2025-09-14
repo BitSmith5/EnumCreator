@@ -36,22 +36,37 @@ namespace EnumCreator.Editor
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
+
+                // Record undo for value edits
+                Undo.RecordObject(def, "Enum Value Change");
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(element, new GUIContent("Value"));
+                if (EditorGUI.EndChangeCheck())
+                    EditorUtility.SetDirty(def);
 
                 // Ensure tooltips list is aligned
                 if (def.MutableTooltips.Count <= i)
                     def.MutableTooltips.Add("");
 
+                // Record undo for tooltip edits
+                Undo.RecordObject(def, "Enum Tooltip Change");
+                EditorGUI.BeginChangeCheck();
                 def.MutableTooltips[i] = EditorGUILayout.TextField("Tooltip", def.MutableTooltips[i]);
+                if (EditorGUI.EndChangeCheck())
+                    EditorUtility.SetDirty(def);
 
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Remove", GUILayout.Width(60)))
                 {
+                    Undo.RecordObject(def, "Enum Value Remove");
+
                     var removedName = element.stringValue;
                     removedValuesProp.arraySize++;
                     removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = removedName;
                     valuesProp.DeleteArrayElementAtIndex(i);
-                    def.MutableTooltips.RemoveAt(i); // Remove corresponding tooltip
+                    def.MutableTooltips.RemoveAt(i);
+
+                    EditorUtility.SetDirty(def);
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -61,8 +76,12 @@ namespace EnumCreator.Editor
             // Add button also adds empty tooltip
             if (GUILayout.Button("+ Add Value"))
             {
+                Undo.RecordObject(def, "Enum Value Add");
+
                 valuesProp.InsertArrayElementAtIndex(valuesProp.arraySize);
                 def.MutableTooltips.Add("");
+
+                EditorUtility.SetDirty(def);
             }
 
             GUI.enabled = true;
