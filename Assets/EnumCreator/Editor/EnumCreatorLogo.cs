@@ -9,6 +9,13 @@ namespace EnumCreator.Editor
     public static class EnumCreatorLogo
     {
         private static Texture2D _logoTexture;
+        private static bool _logoInitialized = false;
+        
+        static EnumCreatorLogo()
+        {
+            // Register for domain unload to clean up resources
+            UnityEditor.EditorApplication.quitting += Cleanup;
+        }
         
         /// <summary>
         /// Gets or creates the EnumCreator logo texture
@@ -17,9 +24,10 @@ namespace EnumCreator.Editor
         {
             get
             {
-                if (_logoTexture == null)
+                if (!_logoInitialized)
                 {
                     _logoTexture = LoadCustomLogo() ?? CreateLogoTexture();
+                    _logoInitialized = true;
                 }
                 return _logoTexture;
             }
@@ -43,7 +51,6 @@ namespace EnumCreator.Editor
                 Texture2D customLogo = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (customLogo != null)
                 {
-                    Debug.Log($"EnumCreator: Using custom logo from {path}");
                     return customLogo;
                 }
             }
@@ -140,9 +147,20 @@ namespace EnumCreator.Editor
         {
             if (_logoTexture != null)
             {
-                Object.DestroyImmediate(_logoTexture);
-                _logoTexture = null;
+                // Check if it's an asset or runtime object
+                if (AssetDatabase.Contains(_logoTexture))
+                {
+                    // It's an asset, don't destroy it
+                    _logoTexture = null;
+                }
+                else
+                {
+                    // It's a runtime object, safe to destroy
+                    Object.DestroyImmediate(_logoTexture);
+                    _logoTexture = null;
+                }
             }
+            _logoInitialized = false;
         }
         
         /// <summary>
@@ -152,6 +170,7 @@ namespace EnumCreator.Editor
         {
             Cleanup();
             _logoTexture = LoadCustomLogo() ?? CreateLogoTexture();
+            _logoInitialized = true;
         }
     }
 }

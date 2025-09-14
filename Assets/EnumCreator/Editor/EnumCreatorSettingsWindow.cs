@@ -45,7 +45,8 @@ namespace EnumCreator.Editor
                 {
                     fontSize = 18,
                     alignment = TextAnchor.MiddleCenter,
-                    normal = { textColor = new Color(0.2f, 0.4f, 0.8f) }
+                    normal = { textColor = EditorGUIUtility.isProSkin ? 
+                        new Color(0.6f, 0.8f, 1f) : new Color(0.2f, 0.4f, 0.8f) }
                 };
             }
 
@@ -54,7 +55,8 @@ namespace EnumCreator.Editor
                 sectionStyle = new GUIStyle(EditorStyles.boldLabel)
                 {
                     fontSize = 12,
-                    normal = { textColor = new Color(0.3f, 0.3f, 0.3f) }
+                    normal = { textColor = EditorGUIUtility.isProSkin ? 
+                        new Color(0.7f, 0.7f, 0.7f) : new Color(0.3f, 0.3f, 0.3f) }
                 };
             }
 
@@ -63,7 +65,8 @@ namespace EnumCreator.Editor
                 versionStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     alignment = TextAnchor.MiddleRight,
-                    normal = { textColor = new Color(0.5f, 0.5f, 0.5f) }
+                    normal = { textColor = EditorGUIUtility.isProSkin ? 
+                        new Color(0.6f, 0.6f, 0.6f) : new Color(0.5f, 0.5f, 0.5f) }
                 };
             }
         }
@@ -311,21 +314,21 @@ namespace EnumCreator.Editor
             
             EditorGUILayout.EndHorizontal();
             
-            // Help and documentation buttons
-            EditorGUILayout.Space(5);
-            EditorGUILayout.BeginHorizontal();
-            
-            if (GUILayout.Button("📖 Documentation", GUILayout.Height(22)))
-            {
-                Application.OpenURL("https://github.com/yourusername/enumcreator"); // Replace with your actual URL
-            }
-            
-            if (GUILayout.Button("🐛 Report Bug", GUILayout.Height(22)))
-            {
-                Application.OpenURL("https://github.com/yourusername/enumcreator/issues"); // Replace with your actual URL
-            }
-            
-            EditorGUILayout.EndHorizontal();
+            // Help and documentation buttons - temporarily removed until URLs are available
+            // EditorGUILayout.Space(5);
+            // EditorGUILayout.BeginHorizontal();
+            // 
+            // if (GUILayout.Button("📖 Documentation", GUILayout.Height(22)))
+            // {
+            //     Application.OpenURL("https://github.com/yourusername/enumcreator"); // Replace with your actual URL
+            // }
+            // 
+            // if (GUILayout.Button("🐛 Report Bug", GUILayout.Height(22)))
+            // {
+            //     Application.OpenURL("https://github.com/yourusername/enumcreator/issues"); // Replace with your actual URL
+            // }
+            // 
+            // EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
             
@@ -386,7 +389,6 @@ namespace EnumCreator.Editor
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
                 hasUnsavedChanges_local = false;
-                Debug.Log("Enum Creator Settings saved successfully.");
             }
         }
 
@@ -421,8 +423,8 @@ namespace EnumCreator.Editor
                 }
             }
             
-            // Clean up logo texture
-            EnumCreatorLogo.Cleanup();
+            // Don't clean up logo texture here - it's shared across instances
+            // The logo will be cleaned up automatically when Unity unloads the domain
         }
 
 

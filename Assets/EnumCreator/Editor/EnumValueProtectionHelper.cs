@@ -11,6 +11,8 @@ namespace EnumCreator.Editor
     /// </summary>
     public static class EnumValueProtectionHelper
     {
+        private static readonly Regex ValuePattern = new Regex(@"^\s*(\w+)\s*=\s*\d+,?\s*$", 
+            RegexOptions.Compiled | RegexOptions.Multiline);
         /// <summary>
         /// Gets the list of values that exist in the generated enum file
         /// </summary>
@@ -30,12 +32,11 @@ namespace EnumCreator.Editor
                     
                     // Parse enum values from the generated file
                     // Match patterns like: "ValueName = 0," or "ValueName = 1,"
-                    var valuePattern = @"^\s*(\w+)\s*=\s*\d+,?\s*$";
                     var lines = content.Split('\n');
                     
                     foreach (string line in lines)
                     {
-                        var match = Regex.Match(line, valuePattern, RegexOptions.Multiline);
+                        var match = ValuePattern.Match(line);
                         if (match.Success)
                         {
                             string valueName = match.Groups[1].Value;

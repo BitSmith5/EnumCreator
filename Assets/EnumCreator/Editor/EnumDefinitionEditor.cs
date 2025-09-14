@@ -20,6 +20,12 @@ namespace EnumCreator.Editor
             serializedObject.Update();
 
             var def = (EnumCreator.EnumDefinition)target;
+            if (def == null)
+            {
+                EditorGUILayout.HelpBox("Enum Definition is null. Please recreate this asset.", MessageType.Error);
+                return;
+            }
+
             var settings = EnumCreatorSettingsManager.GetOrCreateSettings();
             var enumNameProp = serializedObject.FindProperty("enumName");
             var nsProp = serializedObject.FindProperty("namespace");
@@ -101,7 +107,6 @@ namespace EnumCreator.Editor
                         var valueName = element.stringValue;
                         int originalValue = def.UseFlags ? (1 << i) : i;
                         
-                        Debug.Log($"Disabling '{valueName}' at index {i}, preserving value: {originalValue}");
                         
                         removedValuesProp.arraySize++;
                         removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = valueName;
@@ -113,7 +118,6 @@ namespace EnumCreator.Editor
                         // Enable: remove from removed values
                         var valueName = element.stringValue;
                         
-                        Debug.Log($"Enabling '{valueName}' - removing from obsolete list");
                         
                         // Remove from removed values using mutable list
                         int removedIndex = def.MutableRemovedValues.IndexOf(valueName);
@@ -367,7 +371,8 @@ namespace EnumCreator.Editor
                 {
                     fontSize = 14,
                     alignment = TextAnchor.MiddleCenter,
-                    normal = { textColor = new Color(0.2f, 0.4f, 0.8f) }
+                    normal = { textColor = EditorGUIUtility.isProSkin ? 
+                        new Color(0.6f, 0.8f, 1f) : new Color(0.2f, 0.4f, 0.8f) }
                 };
             }
 
@@ -376,7 +381,8 @@ namespace EnumCreator.Editor
                 sectionStyle = new GUIStyle(EditorStyles.boldLabel)
                 {
                     fontSize = 11,
-                    normal = { textColor = new Color(0.3f, 0.3f, 0.3f) }
+                    normal = { textColor = EditorGUIUtility.isProSkin ? 
+                        new Color(0.7f, 0.7f, 0.7f) : new Color(0.3f, 0.3f, 0.3f) }
                 };
             }
         }

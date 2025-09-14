@@ -46,7 +46,6 @@ namespace EnumCreator.Editor
             Selection.activeObject = settings;
             EditorGUIUtility.PingObject(settings);
             
-            Debug.Log($"Created Enum Creator Settings asset at: {assetPath}");
             
             // Show the settings window
             EnumCreatorSettingsWindow.ShowWindow();

@@ -43,7 +43,15 @@ namespace EnumCreator.Editor
             
             if (settings == null)
             {
-                settings = CreateDefaultSettings();
+                try
+                {
+                    settings = CreateDefaultSettings();
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"EnumCreator: Failed to create default settings: {ex.Message}");
+                    return null;
+                }
             }
             
             return settings;
@@ -83,7 +91,6 @@ namespace EnumCreator.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             
-            Debug.Log($"Created default Enum Creator Settings asset at: {assetPath}");
             
             _cachedSettings = settings;
             return settings;

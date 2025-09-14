@@ -16,32 +16,26 @@
     "tooltip"
   ],
   "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com",
-    "url": "https://github.com/yourusername/enumcreator"
+    "name": "Nicholas R. Gallo",
+    "email": "gallo.nicholas@gmail.com",
+    "url": "https://github.com/BitSmith5/EnumCreator"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/enumcreator.git"
+    "url": "https://github.com/BitSmith5/EnumCreator.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/enumcreator/issues"
+    "url": "https://github.com/BitSmith5/EnumCreator/blob/main/issues"
   },
-  "homepage": "https://github.com/yourusername/enumcreator#readme",
-  "documentationUrl": "https://github.com/yourusername/enumcreator/wiki",
-  "changelogUrl": "https://github.com/yourusername/enumcreator/blob/main/CHANGELOG.md",
+  "homepage": "https://gallonicholas.myportfolio.com/",
+  "changelogUrl": "https://github.com/BitSmith5/EnumCreator/blob/main/Assets/EnumCreator/CHANGELOG.md",
   "dependencies": {},
   "samples": [
     {
       "displayName": "Basic Examples",
       "description": "Basic enum creation examples",
       "path": "Samples~/BasicExamples"
-    },
-    {
-      "displayName": "Advanced Examples",
-      "description": "Advanced usage examples including flags and tooltips",
-      "path": "Samples~/AdvancedExamples"
     }
   ]
 }
