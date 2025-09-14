@@ -17,9 +17,13 @@ MonoBehaviour:
   values:
   - Default
   - Something
+  - Test
+  - asdf
   tooltips:
   - 
   - Whatever
+  - 
+  - 
   removedValues: []
   removedValueNumbers: 
   useFlags: 0

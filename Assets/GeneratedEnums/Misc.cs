@@ -7,5 +7,7 @@ namespace Game.Enums
         Default = 1,
         [UnityEngine.Tooltip("Whatever")]
         Something = 2,
+        Test = 4,
+        asdf = 8,
     }
 }

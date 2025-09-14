@@ -23,6 +23,27 @@ namespace EnumCreator.Editor
             var valuesProp = serializedObject.FindProperty("values");
             var removedValuesProp = serializedObject.FindProperty("removedValues");
             var useFlagsProp = serializedObject.FindProperty("useFlags");
+            
+
+            // Open Generated File button at the very top right
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace(); // Push button to the right
+            
+            string generatedPath = settings?.GeneratedEnumsPath ?? "Assets/GeneratedEnums";
+            string path = Path.Combine(generatedPath, def.EnumName + ".cs");
+            bool fileExists = File.Exists(path);
+            
+            GUI.enabled = fileExists; // Only enable if file exists
+            if (GUILayout.Button("Open Generated File", GUILayout.Width(150)))
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                AssetDatabase.OpenAsset(asset);
+            }
+            GUI.enabled = true; // Re-enable GUI
+            
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.Space(5); // Add space between button and enum name
 
             // Always show enum name as read-only (uses filename)
             EditorGUILayout.BeginHorizontal();
@@ -222,8 +243,103 @@ namespace EnumCreator.Editor
                 EditorGUILayout.EndVertical();
             }
 
+            // Apply Changes and Add Value buttons row
+            EditorGUILayout.BeginHorizontal();
+            
+            // Apply Changes button - only show when there are changes
+            if (hasUnsavedChanges_local)
+            {
+                Color originalColor = GUI.color;
+                GUI.color = Color.yellow; // Highlight the button when there are unsaved changes
+                
+                if (GUILayout.Button("Apply Changes ⚠", GUILayout.Width(120)))
+                {
+                    serializedObject.ApplyModifiedProperties();
+
+                    bool hasErrors = false;
+                    bool hasWarnings = false;
+                    string errorMessage = "";
+                    string warningMessage = "";
+
+                    // Check for empty values
+                    for (int i = 0; i < valuesProp.arraySize; i++)
+                    {
+                        var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+
+                        if (string.IsNullOrWhiteSpace(nameI))
+                        {
+                            hasErrors = true;
+                            errorMessage += $"Empty value at index {i + 1}.\n";
+                        }
+                    }
+
+                    // Check for invalid identifiers
+                    for (int i = 0; i < valuesProp.arraySize; i++)
+                    {
+                        var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                        
+                        if (!string.IsNullOrWhiteSpace(nameI) && !ValidIdentifierRegex.IsMatch(nameI))
+                        {
+                            hasErrors = true;
+                            errorMessage += $"Value '{nameI}' is not a valid C# identifier.\n";
+                        }
+                    }
+
+                    // Check for duplicates (warning, not error)
+                    var duplicates = new HashSet<string>();
+                    for (int i = 0; i < valuesProp.arraySize; i++)
+                    {
+                        var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
+                        
+                        if (!string.IsNullOrWhiteSpace(nameI))
+                        {
+                            if (duplicates.Contains(nameI))
+                            {
+                                hasWarnings = true;
+                                warningMessage += $"Duplicate value: '{nameI}'.\n";
+                            }
+                            else
+                            {
+                                duplicates.Add(nameI);
+                            }
+                        }
+                    }
+
+                    // Show error dialog if there are critical errors
+                    if (hasErrors)
+                    {
+                        EditorUtility.DisplayDialog("Enum Creator - Errors", 
+                            $"Cannot generate enum '{def.EnumName}' due to errors:\n\n{errorMessage.TrimEnd()}", "OK");
+                        GUI.color = originalColor;
+                        EditorGUILayout.EndHorizontal();
+                        return;
+                    }
+
+                    // Show warning dialog if there are duplicates and prevent generation
+                    if (hasWarnings)
+                    {
+                        EditorUtility.DisplayDialog("Enum Creator - Duplicates Found", 
+                            $"Cannot apply changes due to duplicate values in '{def.EnumName}':\n\n{warningMessage.TrimEnd()}\n\nPlease fix the duplicates before applying changes.", 
+                            "OK");
+                        GUI.color = originalColor;
+                        EditorGUILayout.EndHorizontal();
+                        return;
+                    }
+
+                    // Generate the enum only if no errors or warnings
+                    EnumGenerator.Generate(def);
+                    hasUnsavedChanges_local = false; // Reset the flag after successful generation
+                    
+                    GUI.color = originalColor;
+                }
+            }
+            
+            GUILayout.FlexibleSpace(); // Push Add Value button to the right
+            
             // Add button - only adds tooltip if IncludeTooltips is enabled
-            if (GUILayout.Button("+ Add Value"))
+            Color addButtonOriginalColor = GUI.color; // Store original color
+            GUI.color = Color.white; // Keep Add Value button white regardless of changes
+            if (GUILayout.Button("Add Value", GUILayout.Width(100)))
             {
                 Undo.RecordObject(def, "Enum Value Add");
 
@@ -240,111 +356,17 @@ namespace EnumCreator.Editor
                 EditorUtility.SetDirty(def);
                 hasUnsavedChanges_local = true;
             }
+            GUI.color = addButtonOriginalColor; // Restore original color
+            EditorGUILayout.EndHorizontal();
 
 
             GUI.enabled = true;
 
-            EditorGUILayout.Space();
-
-            // Apply Changes button with validation and highlighting
-            Color originalColor = GUI.color;
-            if (hasUnsavedChanges_local)
+            // Check if undo has restored the state to original (no changes)
+            // This happens when Ctrl+Z is pressed and the state matches the saved state
+            if (hasUnsavedChanges_local && !serializedObject.hasModifiedProperties && !EditorUtility.IsDirty(def))
             {
-                GUI.color = Color.yellow; // Highlight the button when there are unsaved changes
-            }
-            
-            if (GUILayout.Button(hasUnsavedChanges_local ? "Apply Changes ⚠" : "Apply Changes"))
-            {
-                serializedObject.ApplyModifiedProperties();
-
-                bool hasErrors = false;
-                bool hasWarnings = false;
-                string errorMessage = "";
-                string warningMessage = "";
-
-                // Check for empty values
-                for (int i = 0; i < valuesProp.arraySize; i++)
-                {
-                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
-
-                    if (string.IsNullOrWhiteSpace(nameI))
-                    {
-                        hasErrors = true;
-                        errorMessage += $"Empty value at index {i + 1}.\n";
-                    }
-                }
-
-                // Check for invalid identifiers
-                for (int i = 0; i < valuesProp.arraySize; i++)
-                {
-                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
-                    
-                    if (!string.IsNullOrWhiteSpace(nameI) && !ValidIdentifierRegex.IsMatch(nameI))
-                    {
-                        hasErrors = true;
-                        errorMessage += $"Value '{nameI}' is not a valid C# identifier.\n";
-                    }
-                }
-
-                // Check for duplicates (warning, not error)
-                var duplicates = new HashSet<string>();
-                for (int i = 0; i < valuesProp.arraySize; i++)
-                {
-                    var nameI = valuesProp.GetArrayElementAtIndex(i).stringValue;
-                    
-                    if (!string.IsNullOrWhiteSpace(nameI))
-                    {
-                        if (duplicates.Contains(nameI))
-                        {
-                            hasWarnings = true;
-                            warningMessage += $"Duplicate value: '{nameI}'.\n";
-                        }
-                        else
-                        {
-                            duplicates.Add(nameI);
-                        }
-                    }
-                }
-
-                // Show error dialog if there are critical errors
-                if (hasErrors)
-                {
-                    EditorUtility.DisplayDialog("Enum Creator - Errors", 
-                        $"Cannot generate enum '{def.EnumName}' due to errors:\n\n{errorMessage.TrimEnd()}", "OK");
-                    return;
-                }
-
-                // Show warning dialog if there are duplicates and prevent generation
-                if (hasWarnings)
-                {
-                    EditorUtility.DisplayDialog("Enum Creator - Duplicates Found", 
-                        $"Cannot apply changes due to duplicate values in '{def.EnumName}':\n\n{warningMessage.TrimEnd()}\n\nPlease fix the duplicates before applying changes.", 
-                        "OK");
-                    return;
-                }
-
-                // Generate the enum only if no errors or warnings
-                EnumGenerator.Generate(def);
-                hasUnsavedChanges_local = false; // Reset the flag after successful generation
-            }
-            
-            // Reset GUI color after button
-            GUI.color = originalColor;
-
-            // Open Generated File button
-            if (GUILayout.Button("Open Generated File"))
-            {
-                string generatedPath = settings?.GeneratedEnumsPath ?? "Assets/GeneratedEnums";
-                string path = Path.Combine(generatedPath, def.EnumName + ".cs");
-                if (File.Exists(path))
-                {
-                    var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                    AssetDatabase.OpenAsset(asset);
-                }
-                else
-                {
-                    EditorUtility.DisplayDialog("EnumCreator", "Generated file not found. Apply changes first.", "OK");
-                }
+                hasUnsavedChanges_local = false;
             }
 
             serializedObject.ApplyModifiedProperties();
