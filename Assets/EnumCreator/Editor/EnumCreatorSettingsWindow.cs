@@ -11,9 +11,15 @@ namespace EnumCreator.Editor
         private EnumCreatorSettings settings;
         private Vector2 scrollPosition;
         private bool hasUnsavedChanges_local = false;
+        private Texture2D logoTexture;
+        private GUIStyle headerStyle;
+        private GUIStyle sectionStyle;
+        private GUIStyle versionStyle;
 
         private const string SETTINGS_ASSET_PATH = "Assets/EnumCreator/Settings/EnumCreatorSettings.asset";
         private const string SETTINGS_FOLDER_PATH = "Assets/EnumCreator/Settings";
+        private const string VERSION = "1.0.0";
+        private const string COMPANY_NAME = "EnumCreator Pro";
 
         [MenuItem("Tools/Enum Creator/Settings")]
         public static void ShowWindow()
@@ -27,16 +33,55 @@ namespace EnumCreator.Editor
         private void OnEnable()
         {
             LoadSettings();
+            InitializeStyles();
+            LoadLogo();
+        }
+
+        private void InitializeStyles()
+        {
+            if (headerStyle == null)
+            {
+                headerStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 18,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = new Color(0.2f, 0.4f, 0.8f) }
+                };
+            }
+
+            if (sectionStyle == null)
+            {
+                sectionStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 12,
+                    normal = { textColor = new Color(0.3f, 0.3f, 0.3f) }
+                };
+            }
+
+            if (versionStyle == null)
+            {
+                versionStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    alignment = TextAnchor.MiddleRight,
+                    normal = { textColor = new Color(0.5f, 0.5f, 0.5f) }
+                };
+            }
+        }
+
+        private void LoadLogo()
+        {
+            // Use the professional logo from EnumCreatorLogo class
+            logoTexture = EnumCreatorLogo.LogoTexture;
         }
 
         private void OnGUI()
         {
             EditorGUILayout.BeginVertical();
             
-            // Header
+            // Professional Header with Logo
+            DrawProfessionalHeader();
+            
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Enum Creator Settings", EditorStyles.boldLabel);
-            EditorGUILayout.Space(5);
             
             // Settings asset info
             DrawSettingsAssetInfo();
@@ -106,11 +151,55 @@ namespace EnumCreator.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        private void DrawProfessionalHeader()
+        {
+            // Header background
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            
+            // Logo and title section
+            EditorGUILayout.BeginHorizontal();
+            
+            // Logo
+            if (logoTexture != null)
+            {
+                GUILayout.Label(logoTexture, GUILayout.Width(60), GUILayout.Height(60));
+            }
+            
+            // Title and version
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.Space(10);
+            EditorGUILayout.LabelField(COMPANY_NAME, headerStyle);
+            EditorGUILayout.LabelField("Professional Enum Management Tool", EditorStyles.miniLabel);
+            EditorGUILayout.Space(5);
+            EditorGUILayout.EndVertical();
+            
+            // Version info (right aligned)
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.Space(15);
+            EditorGUILayout.LabelField($"v{VERSION}", versionStyle);
+            EditorGUILayout.EndVertical();
+            
+            EditorGUILayout.EndHorizontal();
+            
+            // Separator line
+            EditorGUILayout.Space(5);
+            Rect rect = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(rect, new Color(0.7f, 0.7f, 0.7f, 0.5f));
+            
+            EditorGUILayout.EndVertical();
+        }
+
         private void DrawSectionHeader(string title)
         {
-            EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-            EditorGUILayout.Space(2);
+            EditorGUILayout.Space(8);
+            
+            // Section header with icon
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("⚙", GUILayout.Width(20));
+            EditorGUILayout.LabelField(title, sectionStyle);
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.Space(3);
         }
 
         private void DrawDefaultValuesSection()
@@ -175,18 +264,25 @@ namespace EnumCreator.Editor
 
         private void DrawActionButtons()
         {
+            // Action buttons section header
+            EditorGUILayout.Space(5);
+            EditorGUILayout.LabelField("Actions", sectionStyle);
+            EditorGUILayout.Space(3);
+            
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            
             EditorGUILayout.BeginHorizontal();
             
-            // Save button
+            // Save button with icon
             GUI.enabled = hasUnsavedChanges_local;
-            if (GUILayout.Button("Save Settings"))
+            if (GUILayout.Button("💾 Save Settings", GUILayout.Height(25)))
             {
                 SaveSettings();
             }
             GUI.enabled = true;
             
-            // Reset to defaults button
-            if (GUILayout.Button("Reset to Defaults"))
+            // Reset to defaults button with icon
+            if (GUILayout.Button("🔄 Reset to Defaults", GUILayout.Height(25)))
             {
                 if (EditorUtility.DisplayDialog("Reset Settings", 
                     "Are you sure you want to reset all settings to their default values?", 
@@ -196,18 +292,42 @@ namespace EnumCreator.Editor
                 }
             }
             
-            // Reload settings button
-            if (GUILayout.Button("Reload Settings"))
+            // Reload settings button with icon
+            if (GUILayout.Button("🔄 Reload Settings", GUILayout.Height(25)))
             {
                 LoadSettings();
             }
             
             EditorGUILayout.EndHorizontal();
             
+            // Help and documentation buttons
+            EditorGUILayout.Space(5);
+            EditorGUILayout.BeginHorizontal();
+            
+            if (GUILayout.Button("📖 Documentation", GUILayout.Height(22)))
+            {
+                Application.OpenURL("https://github.com/yourusername/enumcreator"); // Replace with your actual URL
+            }
+            
+            if (GUILayout.Button("🐛 Report Bug", GUILayout.Height(22)))
+            {
+                Application.OpenURL("https://github.com/yourusername/enumcreator/issues"); // Replace with your actual URL
+            }
+            
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.EndVertical();
+            
             // Status indicator
             if (hasUnsavedChanges_local)
             {
-                EditorGUILayout.HelpBox("You have unsaved changes. Click 'Save Settings' to apply them.", MessageType.Info);
+                EditorGUILayout.Space(5);
+                EditorGUILayout.HelpBox("⚠️ You have unsaved changes. Click 'Save Settings' to apply them.", MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.Space(5);
+                EditorGUILayout.HelpBox("✅ All settings are saved.", MessageType.Info);
             }
         }
 
@@ -289,6 +409,9 @@ namespace EnumCreator.Editor
                     SaveSettings();
                 }
             }
+            
+            // Clean up logo texture
+            EnumCreatorLogo.Cleanup();
         }
 
 

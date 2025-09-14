@@ -11,9 +11,12 @@ namespace EnumCreator.Editor
     {
         private static readonly Regex ValidIdentifierRegex = new Regex(@"^[_a-zA-Z][_a-zA-Z0-9]*$");
         private bool hasUnsavedChanges_local = false;
+        private GUIStyle headerStyle;
+        private GUIStyle sectionStyle;
 
         public override void OnInspectorGUI()
         {
+            InitializeStyles();
             serializedObject.Update();
 
             var def = (EnumCreator.EnumDefinition)target;
@@ -24,26 +27,10 @@ namespace EnumCreator.Editor
             var removedValuesProp = serializedObject.FindProperty("removedValues");
             var useFlagsProp = serializedObject.FindProperty("useFlags");
             
+            // Professional Header
+            DrawProfessionalHeader(def, settings);
 
-            // Open Generated File button at the very top right
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace(); // Push button to the right
-            
-            string generatedPath = settings?.GeneratedEnumsPath ?? "Assets/GeneratedEnums";
-            string path = Path.Combine(generatedPath, def.EnumName + ".cs");
-            bool fileExists = File.Exists(path);
-            
-            GUI.enabled = fileExists; // Only enable if file exists
-            if (GUILayout.Button("Open Generated File", GUILayout.Width(150)))
-            {
-                var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                AssetDatabase.OpenAsset(asset);
-            }
-            GUI.enabled = true; // Re-enable GUI
-            
-            EditorGUILayout.EndHorizontal();
-            
-            EditorGUILayout.Space(5); // Add space between button and enum name
+            EditorGUILayout.Space(10);
 
             // Always show enum name as read-only (uses filename)
             EditorGUILayout.BeginHorizontal();
@@ -87,7 +74,7 @@ namespace EnumCreator.Editor
                 GUI.enabled = false;
             }
 
-            EditorGUILayout.LabelField("Values", EditorStyles.boldLabel);
+            DrawSectionHeader("Values");
 
             for (int i = 0; i < valuesProp.arraySize; i++)
             {
@@ -352,15 +339,15 @@ namespace EnumCreator.Editor
                 {
                     def.MutableTooltips.Add("");
                 }
-
+                
                 EditorUtility.SetDirty(def);
                 hasUnsavedChanges_local = true;
             }
+            
             GUI.color = addButtonOriginalColor; // Restore original color
             EditorGUILayout.EndHorizontal();
 
-
-            GUI.enabled = true;
+            GUI.enabled = true; // Re-enable GUI
 
             // Check if undo has restored the state to original (no changes)
             // This happens when Ctrl+Z is pressed and the state matches the saved state
@@ -372,6 +359,76 @@ namespace EnumCreator.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        private void InitializeStyles()
+        {
+            if (headerStyle == null)
+            {
+                headerStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 14,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = new Color(0.2f, 0.4f, 0.8f) }
+                };
+            }
+
+            if (sectionStyle == null)
+            {
+                sectionStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 11,
+                    normal = { textColor = new Color(0.3f, 0.3f, 0.3f) }
+                };
+            }
+        }
+
+        private void DrawProfessionalHeader(EnumCreator.EnumDefinition def, EnumCreatorSettings settings)
+        {
+            // Simple horizontal layout with buttons pushed to the right
+            EditorGUILayout.BeginHorizontal();
+            
+            // Minimal margin on the left
+            EditorGUILayout.Space(5);
+            
+            // Push buttons to the right
+            GUILayout.FlexibleSpace();
+            
+            string generatedPath = settings?.GeneratedEnumsPath ?? "Assets/GeneratedEnums";
+            string path = Path.Combine(generatedPath, def.EnumName + ".cs");
+            bool fileExists = File.Exists(path);
+            
+            GUI.enabled = fileExists;
+            if (GUILayout.Button("📄 Open Generated File", GUILayout.Width(160), GUILayout.Height(22)))
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                AssetDatabase.OpenAsset(asset);
+            }
+            GUI.enabled = true;
+            
+            EditorGUILayout.Space(5); // Minimal margin between buttons
+            
+            if (GUILayout.Button("🔄 Regenerate", GUILayout.Width(160), GUILayout.Height(22)))
+            {
+                EnumGenerator.Generate(def);
+            }
+            
+            // Minimal margin on the right
+            EditorGUILayout.Space(5);
+            
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawSectionHeader(string title)
+        {
+            EditorGUILayout.Space(5);
+            
+            // Section header with icon
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("⚙", GUILayout.Width(20));
+            EditorGUILayout.LabelField(title, sectionStyle);
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.Space(3);
+        }
 
         private string SanitizeIdentifier(string input)
         {
@@ -387,7 +444,5 @@ namespace EnumCreator.Editor
 
             return sanitized;
         }
-
-
     }
 }
