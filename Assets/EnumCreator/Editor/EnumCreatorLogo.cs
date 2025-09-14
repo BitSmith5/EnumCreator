@@ -19,10 +19,36 @@ namespace EnumCreator.Editor
             {
                 if (_logoTexture == null)
                 {
-                    _logoTexture = CreateLogoTexture();
+                    _logoTexture = LoadCustomLogo() ?? CreateLogoTexture();
                 }
                 return _logoTexture;
             }
+        }
+        
+        /// <summary>
+        /// Tries to load a custom logo from the project
+        /// </summary>
+        private static Texture2D LoadCustomLogo()
+        {
+            // Try to load a custom logo from the project
+            string[] possiblePaths = {
+                "Assets/EnumCreator/Editor/logo.png",
+                "Assets/EnumCreator/Editor/Logo.png",
+                "Assets/EnumCreator/Editor/logo.jpg",
+                "Assets/EnumCreator/Editor/Logo.jpg"
+            };
+            
+            foreach (string path in possiblePaths)
+            {
+                Texture2D customLogo = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (customLogo != null)
+                {
+                    Debug.Log($"EnumCreator: Using custom logo from {path}");
+                    return customLogo;
+                }
+            }
+            
+            return null; // No custom logo found
         }
         
         /// <summary>
@@ -117,6 +143,15 @@ namespace EnumCreator.Editor
                 Object.DestroyImmediate(_logoTexture);
                 _logoTexture = null;
             }
+        }
+        
+        /// <summary>
+        /// Forces a refresh of the logo (useful when you change the logo file)
+        /// </summary>
+        public static void RefreshLogo()
+        {
+            Cleanup();
+            _logoTexture = LoadCustomLogo() ?? CreateLogoTexture();
         }
     }
 }

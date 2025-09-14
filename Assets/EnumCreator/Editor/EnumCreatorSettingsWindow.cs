@@ -159,19 +159,30 @@ namespace EnumCreator.Editor
             // Logo and title section
             EditorGUILayout.BeginHorizontal();
             
-            // Logo
+            // Logo - allow it to scale naturally and use more space
             if (logoTexture != null)
             {
-                GUILayout.Label(logoTexture, GUILayout.Width(60), GUILayout.Height(60));
+                // Calculate optimal size based on texture dimensions
+                float aspectRatio = (float)logoTexture.width / logoTexture.height;
+                int maxSize = 120; // Much larger - twice as tall and proportionally wider
+                
+                int logoWidth, logoHeight;
+                if (aspectRatio > 1) // Wider than tall
+                {
+                    logoWidth = maxSize;
+                    logoHeight = Mathf.RoundToInt(maxSize / aspectRatio);
+                }
+                else // Taller than wide or square
+                {
+                    logoHeight = maxSize;
+                    logoWidth = Mathf.RoundToInt(maxSize * aspectRatio);
+                }
+                
+                GUILayout.Label(logoTexture, GUILayout.Width(logoWidth), GUILayout.Height(logoHeight));
             }
             
-            // Title and version
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(COMPANY_NAME, headerStyle);
-            EditorGUILayout.LabelField("Professional Enum Management Tool", EditorStyles.miniLabel);
-            EditorGUILayout.Space(5);
-            EditorGUILayout.EndVertical();
+            // Spacer to push version to the right
+            GUILayout.FlexibleSpace();
             
             // Version info (right aligned)
             EditorGUILayout.BeginVertical();
