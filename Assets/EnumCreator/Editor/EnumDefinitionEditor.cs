@@ -224,5 +224,6 @@ namespace EnumCreator.Editor
             return sanitized;
         }
 
+
     }
 }

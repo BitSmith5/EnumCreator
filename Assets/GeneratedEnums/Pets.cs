@@ -7,7 +7,8 @@ namespace Game.Enums
     public enum Pets
     {
         Dog = 1,
-        Cat = 2,
-        Fish = 4,
+        Fish = 2,
+        Turtle = 4,
+        Cat = 8,
     }
 }

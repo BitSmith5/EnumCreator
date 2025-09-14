@@ -48,9 +48,11 @@ namespace EnumCreator.Editor
                     
                     if (isDisabled)
                     {
-                        // Mark as obsolete
+                        // Mark as obsolete but keep the original numeric value
+                        int removedIndex = def.MutableRemovedValues.IndexOf(valueName);
+                        int originalValue = (removedIndex >= 0 && removedIndex < def.RemovedValueNumbers.Count) ? def.RemovedValueNumbers[removedIndex] : value;
                         writer.WriteLine($"        [System.Obsolete(\"{name} removed by designer\")]");
-                        writer.WriteLine($"        {name} = {value},");
+                        writer.WriteLine($"        {name} = {originalValue},");
                     }
                     else
                     {

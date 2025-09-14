@@ -16,9 +16,11 @@ MonoBehaviour:
   namespace: Game.Enums
   values:
   - Dog
-  - Cat
   - Fish
+  - Turtle
+  - Cat
   tooltips:
+  - 
   - 
   - 
   - 
