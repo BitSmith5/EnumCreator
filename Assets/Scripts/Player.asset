@@ -20,7 +20,9 @@ MonoBehaviour:
   - Bot
   - _1lkj
   - Bo
+  - NPC
   tooltips:
+  - 
   - 
   - 
   - 
@@ -28,4 +30,5 @@ MonoBehaviour:
   - 
   removedValues:
   - NPC
+  removedValueNumbers: 00000000
   useFlags: 0

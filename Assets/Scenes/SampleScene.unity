@@ -472,7 +472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentWeapon: 0
   currentPlayer: 0
-  myPets: 5
+  myPets: 11
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

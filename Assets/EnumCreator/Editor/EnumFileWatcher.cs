@@ -15,11 +15,16 @@ namespace EnumCreator.Editor
         private static FileSystemWatcher fileWatcher;
         private static readonly string GeneratedPath = "Assets/GeneratedEnums";
         private static System.Collections.Generic.HashSet<string> modifiedFiles = new System.Collections.Generic.HashSet<string>();
+        private static System.Collections.Generic.Dictionary<string, System.DateTime> lastProcessedTimes = new System.Collections.Generic.Dictionary<string, System.DateTime>();
 
         static EnumFileWatcher()
         {
             SetupFileWatcher();
             SetupCompilationCallbacks();
+            
+            // Check for any enum files that might have been modified since last Unity session
+            // This handles the case where someone gets latest from repo and opens Unity
+            EditorApplication.delayCall += CheckAllEnumFilesOnStartup;
         }
 
         private static void SetupFileWatcher()
@@ -59,8 +64,9 @@ namespace EnumCreator.Editor
             CompilationPipeline.compilationStarted += OnCompilationStarted;
             CompilationPipeline.compilationFinished += OnCompilationFinished;
             
-            // Also hook into asset import pipeline
+            // Hook into asset import pipeline to detect when files are imported from version control
             AssetDatabase.importPackageCompleted += OnImportPackageCompleted;
+            
         }
 
         private static void OnCompilationStarted(object obj)
@@ -89,6 +95,20 @@ namespace EnumCreator.Editor
             CheckAllEnumFiles();
         }
 
+        private static void OnAssetsImported(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            // Check if any of the imported assets are enum files in our GeneratedEnums folder
+            foreach (string assetPath in importedAssets)
+            {
+                if (assetPath.StartsWith(GeneratedPath) && assetPath.EndsWith(".cs"))
+                {
+                    // This is an enum file that was imported (likely from version control)
+                    // Process it to sync with the corresponding enum definition
+                    ProcessEnumFile(assetPath);
+                }
+            }
+        }
+
         private static void CheckAllEnumFiles()
         {
             if (!Directory.Exists(GeneratedPath))
@@ -105,6 +125,13 @@ namespace EnumCreator.Editor
             }
         }
 
+        private static void CheckAllEnumFilesOnStartup()
+        {
+            // Check for enum files that were modified since last Unity session
+            // This handles the case where someone gets latest from repo and opens Unity
+            CheckAllEnumFiles();
+        }
+
         private static void ProcessEnumFile(string filePath)
         {
             try
@@ -112,6 +139,14 @@ namespace EnumCreator.Editor
                 // Check if this is a manually edited file (not auto-generated)
                 if (!IsManuallyEdited(filePath))
                     return;
+
+                // Check if we've already processed this file recently
+                var fileInfo = new FileInfo(filePath);
+                if (lastProcessedTimes.ContainsKey(filePath) && 
+                    lastProcessedTimes[filePath] >= fileInfo.LastWriteTime)
+                {
+                    return; // Already processed this version
+                }
 
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
 
@@ -125,11 +160,16 @@ namespace EnumCreator.Editor
                 // Parse the enum file and update the definition
                 ParseAndUpdateEnumDefinition(filePath, enumDef);
 
+                // Only mark as dirty and save if there were actual changes
                 EditorUtility.SetDirty(enumDef);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(enumDef);
+                
+                // Track when we last processed this file
+                lastProcessedTimes[filePath] = fileInfo.LastWriteTime;
             }
-            catch (System.Exception ex)
+            catch (System.Exception)
             {
+                // Silently handle any parsing errors
             }
         }
 
@@ -355,25 +395,20 @@ namespace EnumCreator.Editor
             public bool IsObsolete { get; set; }
         }
 
-        [MenuItem("Tools/EnumCreator/Setup File Watcher")]
+        [MenuItem("Tools/Enum Creator/Setup File Watcher")]
         public static void SetupWatcher()
         {
             SetupFileWatcher();
             SetupCompilationCallbacks();
         }
 
-        [MenuItem("Tools/EnumCreator/Test File Watcher")]
-        public static void TestWatcher()
-        {
-        }
-
-        [MenuItem("Tools/EnumCreator/Force Sync All Enum Files")]
+        [MenuItem("Tools/Enum Creator/Force Sync All Enum Files")]
         public static void ForceSyncAll()
         {
             CheckAllEnumFiles();
         }
 
-        [MenuItem("Tools/EnumCreator/Trigger Compilation Sync")]
+        [MenuItem("Tools/Enum Creator/Trigger Compilation Sync")]
         public static void TriggerCompilationSync()
         {
             OnCompilationFinished(null);

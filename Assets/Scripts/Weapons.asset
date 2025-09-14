@@ -15,5 +15,13 @@ MonoBehaviour:
   enumName: Weapons
   namespace: Game.Enums
   values:
-  - Fire
-  - Ice
+  - Dog
+  - Cat
+  - Fish
+  tooltips:
+  - Four legged creature
+  - 
+  - 
+  removedValues: []
+  removedValueNumbers: 
+  useFlags: 1
