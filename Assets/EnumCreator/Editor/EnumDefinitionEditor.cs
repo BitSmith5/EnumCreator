@@ -40,7 +40,7 @@ namespace EnumCreator.Editor
 
             // Always show enum name as read-only (uses filename)
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Enum Name", "Uses filename as enum name"), GUILayout.Width(85));
+            EditorGUILayout.LabelField(new GUIContent("Enum Name", "Uses filename as enum name"), GUILayout.Width(75));
             EditorGUILayout.LabelField(def.EnumName, EditorStyles.textField);
             EditorGUILayout.EndHorizontal();
             
@@ -57,7 +57,7 @@ namespace EnumCreator.Editor
             // Namespace field with tight spacing
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Namespace", GUILayout.Width(85));
+            EditorGUILayout.LabelField(new GUIContent("Namespace", "The namespace where this enum will be generated. This helps organize your code and prevents naming conflicts with other enums."), GUILayout.Width(75));
             nsProp.stringValue = EditorGUILayout.TextField(nsProp.stringValue);
             EditorGUILayout.EndHorizontal();
             if (EditorGUI.EndChangeCheck())
@@ -66,7 +66,7 @@ namespace EnumCreator.Editor
             // Use as Flags field with tight spacing
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Use as Flags", GUILayout.Width(85));
+            EditorGUILayout.LabelField(new GUIContent("Multi-Select Enum", "When enabled, allows selecting multiple enum values at once in Unity's inspector. Perfect for properties like 'Item Types' where you might want to select both 'Weapon' and 'Rare' simultaneously."), GUILayout.Width(110));
             useFlagsProp.boolValue = EditorGUILayout.Toggle(useFlagsProp.boolValue);
             EditorGUILayout.EndHorizontal();
             if (EditorGUI.EndChangeCheck())
@@ -87,50 +87,53 @@ namespace EnumCreator.Editor
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 var element = valuesProp.GetArrayElementAtIndex(i);
 
-                // Enable/Disable checkbox
-                Undo.RecordObject(def, "Enum Value Toggle");
-                EditorGUI.BeginChangeCheck();
-                
-                // Check if this value is currently disabled (in removed values)
-                bool isEnabled = !def.MutableRemovedValues.Contains(element.stringValue);
-                
-                EditorGUILayout.BeginHorizontal();
-                bool newEnabled = EditorGUILayout.Toggle(isEnabled, GUILayout.Width(20));
-                EditorGUILayout.LabelField(isEnabled ? "✓ Enabled" : "✗ Disabled", GUILayout.Width(80));
-                EditorGUILayout.EndHorizontal();
-                
-                if (EditorGUI.EndChangeCheck())
+                // Enable/Disable checkbox (only show if setting is enabled)
+                if (settings?.ShowEnableDisableControls == true)
                 {
-                    if (isEnabled && !newEnabled)
+                    Undo.RecordObject(def, "Enum Value Toggle");
+                    EditorGUI.BeginChangeCheck();
+                    
+                    // Check if this value is currently disabled (in removed values)
+                    bool isEnabled = !def.MutableRemovedValues.Contains(element.stringValue);
+                    
+                    EditorGUILayout.BeginHorizontal();
+                    bool newEnabled = EditorGUILayout.Toggle(isEnabled, GUILayout.Width(20));
+                    EditorGUILayout.LabelField(isEnabled ? "✓ Enabled" : "✗ Disabled", GUILayout.Width(80));
+                    EditorGUILayout.EndHorizontal();
+                
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        // Disable: move to removed values
-                        var valueName = element.stringValue;
-                        int originalValue = def.UseFlags ? (1 << i) : i;
-                        
-                        
-                        removedValuesProp.arraySize++;
-                        removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = valueName;
-                        def.MutableRemovedValueNumbers.Add(originalValue);
-                        
-                    }
-                    else if (!isEnabled && newEnabled)
-                    {
-                        // Enable: remove from removed values
-                        var valueName = element.stringValue;
-                        
-                        
-                        // Remove from removed values using mutable list
-                        int removedIndex = def.MutableRemovedValues.IndexOf(valueName);
-                        if (removedIndex >= 0)
+                        if (isEnabled && !newEnabled)
                         {
-                            def.MutableRemovedValues.RemoveAt(removedIndex);
-                            def.MutableRemovedValueNumbers.RemoveAt(removedIndex);
+                            // Disable: move to removed values
+                            var valueName = element.stringValue;
+                            int originalValue = def.UseFlags ? (1 << i) : i;
+                            
+                            
+                            removedValuesProp.arraySize++;
+                            removedValuesProp.GetArrayElementAtIndex(removedValuesProp.arraySize - 1).stringValue = valueName;
+                            def.MutableRemovedValueNumbers.Add(originalValue);
+                            
+                        }
+                        else if (!isEnabled && newEnabled)
+                        {
+                            // Enable: remove from removed values
+                            var valueName = element.stringValue;
+                            
+                            
+                            // Remove from removed values using mutable list
+                            int removedIndex = def.MutableRemovedValues.IndexOf(valueName);
+                            if (removedIndex >= 0)
+                            {
+                                def.MutableRemovedValues.RemoveAt(removedIndex);
+                                def.MutableRemovedValueNumbers.RemoveAt(removedIndex);
+                            }
+                            
                         }
                         
+                        EditorUtility.SetDirty(def);
+                        hasUnsavedChanges_local = true;
                     }
-                    
-                    EditorUtility.SetDirty(def);
-                    hasUnsavedChanges_local = true;
                 }
 
                 // Record undo for value changes

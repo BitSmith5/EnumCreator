@@ -165,8 +165,17 @@ namespace EnumCreator.Editor
             // Header background
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
+            // Center content vertically within the rectangle
+            EditorGUILayout.BeginVertical();
+            
             // Logo and title section
             EditorGUILayout.BeginHorizontal();
+            
+            // Small left margin for logo
+            EditorGUILayout.Space(5);
+            
+            // Small top margin to center logo vertically
+            EditorGUILayout.BeginVertical();
             
             // Logo - pixel perfect scaling
             if (logoTexture != null)
@@ -194,29 +203,28 @@ namespace EnumCreator.Editor
                 GUILayout.Label(logoTexture, logoStyle, GUILayout.Width(logoWidth), GUILayout.Height(logoHeight));
             }
             
+            EditorGUILayout.EndVertical();
+            
             // Spacer to push version to the right
             GUILayout.FlexibleSpace();
             
             // Version info (right aligned)
             EditorGUILayout.BeginVertical();
-            EditorGUILayout.Space(15);
+            EditorGUILayout.Space(10);
             if (versionStyle != null)
             {
-                EditorGUILayout.LabelField($"v{VERSION}", versionStyle);
+                EditorGUILayout.LabelField($"v{VERSION}", versionStyle, GUILayout.Width(50));
             }
             else
             {
-                EditorGUILayout.LabelField($"v{VERSION}");
+                EditorGUILayout.LabelField($"v{VERSION}", GUILayout.Width(50));
             }
+            EditorGUILayout.Space(5); // Small right margin
             EditorGUILayout.EndVertical();
             
             EditorGUILayout.EndHorizontal();
             
-            // Separator line
-            EditorGUILayout.Space(5);
-            Rect rect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(rect, new Color(0.7f, 0.7f, 0.7f, 0.5f));
-            
+            EditorGUILayout.EndVertical();
             EditorGUILayout.EndVertical();
         }
 
@@ -239,26 +247,26 @@ namespace EnumCreator.Editor
             
             // Default Namespace
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Default Namespace:", "The default namespace that will be used for all newly created enum definitions. This helps maintain consistent code organization across your project."), GUILayout.Width(150));
+            EditorGUILayout.LabelField(new GUIContent("Default Namespace:", "The default namespace that will be used for all newly created enum definitions. This helps maintain consistent code organization across your project."), GUILayout.Width(200));
             settings.MutableDefaultNamespace = EditorGUILayout.TextField(settings.MutableDefaultNamespace);
             EditorGUILayout.EndHorizontal();
             
             
             // Prevent Value Name Changes
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Prevent Value Name Changes:", "When enabled, enum value names that already exist in generated enum files become read-only, preventing accidental changes. New values can still be added freely. This protects existing values while allowing new ones."), GUILayout.Width(180));
+            EditorGUILayout.LabelField(new GUIContent("Prevent Value Name Changes:", "When enabled, enum value names that already exist in generated enum files become read-only, preventing accidental changes. New values can still be added freely. This protects existing values while allowing new ones."), GUILayout.Width(200));
             settings.MutablePreventValueNameChanges = EditorGUILayout.Toggle(settings.MutablePreventValueNameChanges);
             EditorGUILayout.EndHorizontal();
             
             // Generated Enums Path
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Generated Enums Path:", "The folder path where generated enum .cs files will be saved. Use forward slashes and ensure the path exists or can be created."), GUILayout.Width(150));
+            EditorGUILayout.LabelField(new GUIContent("Generated Enums Path:", "The folder path where generated enum .cs files will be saved. Use forward slashes and ensure the path exists or can be created."), GUILayout.Width(200));
             settings.MutableGeneratedEnumsPath = EditorGUILayout.TextField(settings.MutableGeneratedEnumsPath);
             EditorGUILayout.EndHorizontal();
             
-            // Default Use Flags
+            // Default Multi-Select Enum
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Default Use Flags:", "Whether newly created enums should use the [System.Flags] attribute by default. Flags enums allow multiple values to be combined using bitwise operations."), GUILayout.Width(150));
+            EditorGUILayout.LabelField(new GUIContent("Multi-Select Enum (use flags):", "Whether newly created enums should allow multiple selection by default. This enables selecting multiple enum values at once in Unity's inspector."), GUILayout.Width(200));
             settings.MutableDefaultUseFlags = EditorGUILayout.Toggle(settings.MutableDefaultUseFlags);
             EditorGUILayout.EndHorizontal();
             
@@ -278,7 +286,7 @@ namespace EnumCreator.Editor
             
             // Include Tooltips
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(new GUIContent("Include Tooltips:", "When enabled, [UnityEngine.Tooltip] attributes will be included in the generated enum files for values that have tooltips defined. This provides IntelliSense documentation in your IDE."), GUILayout.Width(150));
+            EditorGUILayout.LabelField(new GUIContent("Include Tooltips:", "When enabled, [UnityEngine.Tooltip] attributes will be included in the generated enum files for values that have tooltips defined. This provides IntelliSense documentation in your IDE."), GUILayout.Width(200));
             settings.MutableIncludeTooltips = EditorGUILayout.Toggle(settings.MutableIncludeTooltips);
             EditorGUILayout.EndHorizontal();
             
@@ -286,6 +294,12 @@ namespace EnumCreator.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(new GUIContent("Include Auto Generated Header:", "When enabled, auto-generated header comments will be added to the top of generated enum files. These headers identify the file as auto-generated."), GUILayout.Width(200));
             settings.MutableIncludeAutoGeneratedHeader = EditorGUILayout.Toggle(settings.MutableIncludeAutoGeneratedHeader);
+            EditorGUILayout.EndHorizontal();
+            
+            // Show Enable/Disable Controls
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(new GUIContent("Show Enable/Disable Controls:", "When enabled, enable/disable checkboxes and labels will be shown for each enum value in the inspector. This allows you to temporarily disable enum values without removing them."), GUILayout.Width(200));
+            settings.MutableShowEnableDisableControls = EditorGUILayout.Toggle(settings.MutableShowEnableDisableControls);
             EditorGUILayout.EndHorizontal();
             
             
