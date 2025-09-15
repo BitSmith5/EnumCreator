@@ -29,8 +29,7 @@ namespace EnumCreator.Editor
     /// InitializeOnLoad class to handle settings application on editor startup
     /// </summary>
     [InitializeOnLoad]
-    public static class EnumDefinitionInitializer
-    {
+    public static class EnumDefinitionInitializer    {
         static EnumDefinitionInitializer()
         {
             // Hook into the asset creation process
@@ -95,8 +94,7 @@ namespace EnumCreator.Editor
             return currentNamespace == "Game.Enums" && 
                    currentEnumName == "MyEnum" && 
                    currentValues != null && 
-                   currentValues.Count == 1 && 
-                   currentValues[0] == "Default";
+                   currentValues.Count == 0;
         }
     }
 }

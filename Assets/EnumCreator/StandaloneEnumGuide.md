@@ -11,31 +11,27 @@
 
 Everything else is automatically generated for you. The system handles the Unity integration, asset creation, and synchronization behind the scenes.
 
-**Code Side Enum Creation**: EnumCreator Pro supports creating enum files directly in the generated enums folder. When you place a properly formatted enum file in the generated enums folder, the system will automatically create a corresponding EnumDefinition asset if one doesn't already exist. This allows engineers to work directly with C# code while maintaining full integration with Unity's enum system.
+**Code Side Enum Creation**: EnumCreator supports creating enum files directly in the generated enums folder. When you place a properly formatted enum file in the generated enums folder, the system will automatically create a corresponding EnumDefinition asset if one doesn't already exist. This allows engineers to work directly with C# code while maintaining full integration with Unity's enum system.
 
 > **Important**: The tool requires **one enum per file/script**. You cannot put multiple enums in a single C# file. Each enum must be in its own separate file, which allows the system to properly track and manage each enum definition individually.
 
 ## How to Create Standalone Enum Files
 
-### Method 1: Use the Tools Menu
-1. Go to `Tools > Enum Creator > Create New Enum File`
-2. Enter a name for your enum in the centered dialog that appears
-3. The system will create a template enum file with your chosen name in the Generated Enums folder
-4. Edit the file to add your enum values
-5. Save the file - the system will automatically detect it and create an EnumDefinition
+There are **two main methods** for creating enum files with EnumCreator:
 
-### Method 2: Right-Click in Project Window
+### Method 1: Right-Click in Project Window
 1. Right-click on any folder in the Project window
 2. Navigate to `Create > Enum Creator > Enum File`
 3. If you're not in the Generated Enums folder, the system will ask if you want to use the Generated Enums folder
 4. Enter a name for your enum in the dialog
-5. The system creates the enum file and automatically creates an EnumDefinition when you save
+5. The system creates an empty enum file and automatically creates an EnumDefinition when you save
+6. Edit the file to add your enum values as needed
 
-### Method 3: Create Manually
+### Method 2: Create Manually
 1. Navigate to your generated enums folder (default: `Assets/GeneratedEnums`)
 2. Create a new `.cs` file with your enum name (e.g., `MyEnum.cs`)
 3. Write your enum following the supported format (see below)
-4. Save the file - the system will automatically detect it
+4. Save the file - the system will automatically detect it and create the corresponding EnumDefinition
 
 ## Supported Enum File Format
 
@@ -69,16 +65,17 @@ namespace YourNamespace
 1. **File Detection**: The system watches the generated enums folder for changes
 2. **Parsing**: Your enum file is parsed to extract:
    - Enum name and namespace
-   - All enum values with their numeric values
+   - All enum values with their numeric values (if any)
    - Tooltips and obsolete attributes
    - Flags attribute
 3. **Definition Creation**: If no EnumDefinition exists for this enum:
    - A new EnumDefinition asset is created in `Assets/EnumCreator/Definitions/`
    - The asset is named exactly like your enum (e.g., `MyEnum.asset`)
    - The asset is populated with data from your enum file
+   - **Empty enums are supported** - you can start with an empty enum and add values later through the inspector
    - The system respects your EnumCreator settings (powers of two, default flags, etc.)
 4. **Synchronization**: Future changes to your enum file will update the EnumDefinition
-5. **Template Generation**: When using the menu items, templates are generated based on your current EnumCreator settings
+5. **Empty Template**: When using the right-click menu, an empty enum template is created that you can populate with your own values
 
 ## Benefits
 
@@ -104,10 +101,10 @@ If your enum file isn't being detected:
 2. Check that the enum name matches the filename (without .cs extension)
 3. Verify the enum format is correct (see format requirements above)
 4. Ensure the enum name is a valid C# identifier (starts with letter/underscore, contains only letters/digits/underscores)
-5. Try using `Tools > Enum Creator > Utilities > Force Sync All Enum Files`
-6. Check the Console for any error messages
+5. Check the Console for any error messages
+6. Try refreshing the project (Ctrl+R) to trigger file detection
 
-If you get naming conflicts when using the menu items:
+If you get naming conflicts when using the right-click menu:
 1. The dialog will warn you if a file with the same name already exists
 2. Choose "Overwrite" to replace the existing file, or "Cancel" to choose a different name
 3. The system validates enum names to prevent invalid C# identifiers
@@ -116,6 +113,31 @@ If the right-click context menu doesn't appear:
 1. Make sure you're right-clicking on a folder or the project root
 2. The menu item appears under `Create > Enum Creator > Enum File`
 3. If you're not in the Generated Enums folder, the system will offer to create the file there instead
+
+If your enum definition asset isn't being created:
+1. Check that the enum file is properly formatted and compiles without errors
+2. Ensure the file is saved and Unity has refreshed
+3. Look for any error messages in the Console
+4. Empty enums are supported - you can start with an empty enum and add values later
+
+## Tools Menu
+
+The following Tools menu items are available for managing Enum Creator:
+
+### Tools > Enum Creator > Settings
+- Opens the Enum Creator Settings window
+- Configure default namespace, generated enums path, and other preferences
+- Set whether new enums should use flags by default
+- Configure powers of two numbering for unflagged enums
+
+### Tools > Enum Creator > Create Settings Asset
+- Creates a new EnumCreatorSettings asset if one doesn't exist
+- Automatically opens the Settings window after creation
+- Useful for first-time setup or resetting settings
+
+### Tools > Enum Creator > About
+- Shows information about the Enum Creator tool
+- Displays version information and features
 
 ## Asset Store Distribution
 
@@ -127,6 +149,17 @@ This feature is designed for professional Unity development workflows and is dis
 - **Unity Integration**: Seamless integration with Unity's inspector and serialization system
 
 ## Example Files
+
+### Empty Enum (Starting Point)
+```csharp
+namespace Game.Enums
+{
+    public enum Weapons
+    {
+    }
+}
+```
+*This is what you get when using the right-click menu. You can add values later through the inspector or by editing the file directly.*
 
 ### Simple Enum
 ```csharp

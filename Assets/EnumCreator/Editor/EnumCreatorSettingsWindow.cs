@@ -346,20 +346,6 @@ namespace EnumCreator.Editor
             EditorGUILayout.EndHorizontal();
             
             // Help and documentation buttons - temporarily removed until URLs are available
-            // EditorGUILayout.Space(5);
-            // EditorGUILayout.BeginHorizontal();
-            // 
-            // if (GUILayout.Button("📖 Documentation", GUILayout.Height(22)))
-            // {
-            //     Application.OpenURL("https://github.com/yourusername/enumcreator"); // Replace with your actual URL
-            // }
-            // 
-            // if (GUILayout.Button("🐛 Report Bug", GUILayout.Height(22)))
-            // {
-            //     Application.OpenURL("https://github.com/yourusername/enumcreator/issues"); // Replace with your actual URL
-            // }
-            // 
-            // EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.EndVertical();
             
@@ -407,8 +393,6 @@ namespace EnumCreator.Editor
             AssetDatabase.CreateAsset(settings, SETTINGS_ASSET_PATH);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            
-            Debug.Log($"Created Enum Creator Settings asset at: {SETTINGS_ASSET_PATH}");
             
             hasUnsavedChanges_local = false;
         }

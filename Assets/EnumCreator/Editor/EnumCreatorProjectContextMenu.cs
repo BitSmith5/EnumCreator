@@ -121,32 +121,6 @@ namespace EnumCreator.Editor
                 
                 writer.WriteLine($"    public enum {enumName}");
                 writer.WriteLine("    {");
-                
-                // Determine numbering scheme based on settings
-                writer.WriteLine("        None = 0,");
-                
-                if (settings?.DefaultUseFlags == true)
-                {
-                    // Flags always use powers of 2
-                    writer.WriteLine("        Value1 = 1,");
-                    writer.WriteLine("        Value2 = 2,");
-                    writer.WriteLine("        Value3 = 4,");
-                }
-                else if (settings?.UsePowersOfTwoForUnflagged == true)
-                {
-                    // Unflagged enums using powers of 2
-                    writer.WriteLine("        Value1 = 1,");
-                    writer.WriteLine("        Value2 = 2,");
-                    writer.WriteLine("        Value3 = 4,");
-                }
-                else
-                {
-                    // Sequential numbering
-                    writer.WriteLine("        Value1 = 1,");
-                    writer.WriteLine("        Value2 = 2,");
-                    writer.WriteLine("        Value3 = 3,");
-                }
-                
                 writer.WriteLine("    }");
                 writer.WriteLine("}");
             }
@@ -157,8 +131,6 @@ namespace EnumCreator.Editor
             var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filePath);
             Selection.activeObject = asset;
             EditorGUIUtility.PingObject(asset);
-            
-            Debug.Log($"EnumCreator: Created new enum file '{enumName}' at '{filePath}'. Edit this file and save to automatically create an enum definition.");
         }
         
         private static bool IsValidEnumName(string name)

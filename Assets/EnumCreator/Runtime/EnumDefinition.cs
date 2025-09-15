@@ -8,7 +8,7 @@ namespace EnumCreator
     {
         [SerializeField] private string enumName = "MyEnum";
         [SerializeField] private string @namespace = "Game.Enums";
-        [SerializeField] private List<string> values = new List<string>() { "Default" };
+        [SerializeField] private List<string> values = new List<string>();
         [SerializeField] private List<string> tooltips = new List<string>() { "" };  // New list for comments/tooltips
         [SerializeField] private List<string> removedValues = new List<string>();
         [SerializeField] private List<int> removedValueNumbers = new List<int>();  // Store original numeric values for removed values
