@@ -1,8 +1,19 @@
-# Standalone Enum Files Guide
+# Enum Creator User Manual
 
 ## Overview
 
-EnumCreator Pro supports creating enum files directly in the generated enums folder. When you place a properly formatted enum file in the generated enums folder, the system will automatically create a corresponding EnumDefinition asset if one doesn't already exist. This allows engineers to work directly with C# code while maintaining full integration with Unity's enum system.
+**Main Purpose**: EnumCreator Pro is designed to make it easier for designers and developers to create their own enums directly from Unity. The tool simplifies enum creation by automating the complex parts while giving you full control over the enum content.
+
+**What You Need to Know**: There are only two main things you need to understand to use this tool effectively:
+
+1. **Create an Enum Definition** - This is where you define your enum values, names, and properties
+2. **Know About the Settings** - Configure how enums are generated (powers of two, default flags, etc.)
+
+Everything else is automatically generated for you. The system handles the Unity integration, asset creation, and synchronization behind the scenes.
+
+**Code Side Enum Creation**: EnumCreator Pro supports creating enum files directly in the generated enums folder. When you place a properly formatted enum file in the generated enums folder, the system will automatically create a corresponding EnumDefinition asset if one doesn't already exist. This allows engineers to work directly with C# code while maintaining full integration with Unity's enum system.
+
+> **Important**: The tool requires **one enum per file/script**. You cannot put multiple enums in a single C# file. Each enum must be in its own separate file, which allows the system to properly track and manage each enum definition individually.
 
 ## How to Create Standalone Enum Files
 
