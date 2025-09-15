@@ -79,6 +79,12 @@ namespace EnumCreator.Editor
 
         private void OnGUI()
         {
+            // Ensure styles are initialized
+            if (versionStyle == null)
+            {
+                InitializeStyles();
+            }
+            
             EditorGUILayout.BeginVertical();
             
             // Professional Header with Logo
@@ -162,7 +168,7 @@ namespace EnumCreator.Editor
             // Logo and title section
             EditorGUILayout.BeginHorizontal();
             
-            // Logo - allow it to scale naturally and use more space
+            // Logo - pixel perfect scaling
             if (logoTexture != null)
             {
                 // Calculate optimal size based on texture dimensions
@@ -181,7 +187,11 @@ namespace EnumCreator.Editor
                     logoWidth = Mathf.RoundToInt(maxSize * aspectRatio);
                 }
                 
-                GUILayout.Label(logoTexture, GUILayout.Width(logoWidth), GUILayout.Height(logoHeight));
+                // Create a GUIStyle with pixel perfect settings
+                GUIStyle logoStyle = new GUIStyle();
+                logoStyle.imagePosition = ImagePosition.ImageOnly;
+                
+                GUILayout.Label(logoTexture, logoStyle, GUILayout.Width(logoWidth), GUILayout.Height(logoHeight));
             }
             
             // Spacer to push version to the right
@@ -190,7 +200,14 @@ namespace EnumCreator.Editor
             // Version info (right aligned)
             EditorGUILayout.BeginVertical();
             EditorGUILayout.Space(15);
-            EditorGUILayout.LabelField($"v{VERSION}", versionStyle);
+            if (versionStyle != null)
+            {
+                EditorGUILayout.LabelField($"v{VERSION}", versionStyle);
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"v{VERSION}");
+            }
             EditorGUILayout.EndVertical();
             
             EditorGUILayout.EndHorizontal();
