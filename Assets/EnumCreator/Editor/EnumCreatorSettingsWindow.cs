@@ -41,7 +41,18 @@ namespace EnumCreator.Editor
         {
             if (headerStyle == null)
             {
-                headerStyle = new GUIStyle(EditorStyles.boldLabel)
+                // Safely get EditorStyles.boldLabel, fallback to new GUIStyle if it throws
+                GUIStyle baseStyle;
+                try
+                {
+                    baseStyle = EditorStyles.boldLabel ?? new GUIStyle();
+                }
+                catch (System.NullReferenceException)
+                {
+                    baseStyle = new GUIStyle();
+                }
+                
+                headerStyle = new GUIStyle(baseStyle)
                 {
                     fontSize = 18,
                     alignment = TextAnchor.MiddleCenter,
@@ -52,7 +63,18 @@ namespace EnumCreator.Editor
 
             if (sectionStyle == null)
             {
-                sectionStyle = new GUIStyle(EditorStyles.boldLabel)
+                // Safely get EditorStyles.boldLabel, fallback to new GUIStyle if it throws
+                GUIStyle baseStyle;
+                try
+                {
+                    baseStyle = EditorStyles.boldLabel ?? new GUIStyle();
+                }
+                catch (System.NullReferenceException)
+                {
+                    baseStyle = new GUIStyle();
+                }
+                
+                sectionStyle = new GUIStyle(baseStyle)
                 {
                     fontSize = 12,
                     normal = { textColor = EditorGUIUtility.isProSkin ? 
@@ -62,7 +84,18 @@ namespace EnumCreator.Editor
 
             if (versionStyle == null)
             {
-                versionStyle = new GUIStyle(EditorStyles.miniLabel)
+                // Safely get EditorStyles.miniLabel, fallback to new GUIStyle if it throws
+                GUIStyle baseStyle;
+                try
+                {
+                    baseStyle = EditorStyles.miniLabel ?? new GUIStyle();
+                }
+                catch (System.NullReferenceException)
+                {
+                    baseStyle = new GUIStyle();
+                }
+                
+                versionStyle = new GUIStyle(baseStyle)
                 {
                     alignment = TextAnchor.MiddleRight,
                     normal = { textColor = EditorGUIUtility.isProSkin ? 
