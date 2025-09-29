@@ -1,0 +1,26 @@
+{
+  "name": "com.enumeditor.package",
+  "version": "1.0.0",
+  "displayName": "EnumEditor",
+  "description": "A Unity Editor tool for adding new values to existing enums directly from the Inspector.",
+  "unity": "2021.3",
+  "keywords": [
+    "enum",
+    "editor",
+    "inspector",
+    "unity"
+  ],
+  "author": {
+    "name": "Nicholas R. Gallo",
+    "email": "gallo.nicholas@gmail.com",
+    "url": "https://gallonicholas.myportfolio.com/"
+  },
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Sample Enums",
+      "description": "Sample enum files to demonstrate EnumEditor functionality",
+      "path": "Samples~/SampleEnums"
+    }
+  ]
+}
