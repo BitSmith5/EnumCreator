@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7e3c36bec800458286deb7dadd3c456, type: 3}
   m_Name: EnumEditorSettings
   m_EditorClassIdentifier: 
-  enableEnumEditor: 1
+  enableEnumEditor: 0
   showConfirmationDialog: 1
   addButtonText: +
   newValueFieldLabel: 'New Value:'

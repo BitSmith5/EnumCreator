@@ -8,9 +8,6 @@ namespace EnumEditor.Editor
     [CustomPropertyDrawer(typeof(Enum), true)]
     public class EnumFieldDrawer : PropertyDrawer
     {
-        private static readonly GUIContent AddButtonContent = new GUIContent("+", "Add new enum value");
-        private static readonly GUIContent NewValueLabel = new GUIContent("New Value:");
-        
         private string newValueName = "";
         private bool showAddField = false;
         
@@ -31,7 +28,8 @@ namespace EnumEditor.Editor
             
             // Draw add button
             var buttonRect = new Rect(position.x + position.width - 25, position.y, 25, EditorGUIUtility.singleLineHeight);
-            if (GUI.Button(buttonRect, AddButtonContent))
+            var addButtonContent = new GUIContent(settings.addButtonText, "Add new enum value");
+            if (GUI.Button(buttonRect, addButtonContent))
             {
                 showAddField = !showAddField;
                 if (showAddField)
@@ -47,7 +45,8 @@ namespace EnumEditor.Editor
                     position.width, EditorGUIUtility.singleLineHeight);
                 
                 EditorGUI.BeginChangeCheck();
-                newValueName = EditorGUI.TextField(newValueRect, NewValueLabel, newValueName);
+                var newValueLabel = new GUIContent(settings.newValueFieldLabel);
+                newValueName = EditorGUI.TextField(newValueRect, newValueLabel, newValueName);
                 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -117,8 +116,8 @@ namespace EnumEditor.Editor
                 return;
             }
             
-            // Check for duplicates
-            if (enumInfo.HasValue(newValueName))
+            // Check for duplicates if enabled
+            if (settings.preventDuplicates && enumInfo.HasValue(newValueName))
             {
                 EditorUtility.DisplayDialog("EnumEditor", 
                     $"Value '{newValueName}' already exists in enum '{enumType.Name}'.", "OK");
@@ -143,6 +142,13 @@ namespace EnumEditor.Editor
             if (success)
             {
                 Debug.Log($"EnumEditor: Successfully added '{newValueName}' to enum '{enumType.Name}'");
+                
+                // Check if this is an EnumCreator-managed file and update the EnumDefinition
+                if (EnumCreatorIntegration.IsEnumCreatorAvailable() && 
+                    EnumCreatorIntegration.IsEnumCreatorManagedFile(enumInfo.filePath))
+                {
+                    EnumCreatorIntegration.UpdateEnumDefinitionAfterValueAdded(enumInfo.filePath, enumType.Name, newValueName);
+                }
                 
                 // Refresh the property
                 property.serializedObject.Update();

@@ -4,7 +4,7 @@
 
 ## Overview
 
-EnumEditor is a powerful Unity Editor extension that allows you to add new values to existing enums directly from the Unity Inspector. When you have a public enum field exposed in the Inspector, EnumEditor automatically adds a field underneath it with a plus button. Clicking the plus button allows you to add new enum values with proper validation and confirmation.
+Enum Editor is a powerful Unity Editor extension designed to boost designer productivity by allowing new enum values to be added directly from the Unity Inspector. When you have a public enum field exposed in the Inspector, Enum Editor automatically includes an add button next to each enum. This eliminates the need for designers to ask engineers for help when they need new enum values, as Unity by default only allows custom values for primitive types like int and string.
 
 ## Features
 

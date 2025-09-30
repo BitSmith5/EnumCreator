@@ -34,6 +34,31 @@ namespace EnumEditor
             {
                 if (_instance == null)
                 {
+                    // Try to get settings from the manager first (for editor)
+                    #if UNITY_EDITOR
+                    try
+                    {
+                        var settingsManagerType = System.Type.GetType("EnumEditor.Editor.EnumEditorSettingsManager, Assembly-CSharp-Editor");
+                        if (settingsManagerType != null)
+                        {
+                            var getSettingsMethod = settingsManagerType.GetMethod("GetOrCreateSettings", 
+                                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                            
+                            if (getSettingsMethod != null)
+                            {
+                                _instance = getSettingsMethod.Invoke(null, null) as EnumEditorSettings;
+                                if (_instance != null)
+                                    return _instance;
+                            }
+                        }
+                    }
+                    catch (System.Exception)
+                    {
+                        // Fall back to Resources.Load if manager is not available
+                    }
+                    #endif
+                    
+                    // Fallback to Resources.Load
                     _instance = Resources.Load<EnumEditorSettings>("EnumEditorSettings");
                     if (_instance == null)
                     {
